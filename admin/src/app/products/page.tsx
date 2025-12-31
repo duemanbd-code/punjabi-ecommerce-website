@@ -31,6 +31,57 @@ interface Product {
   createdAt?: string;
 }
 
+// ==================== UTILITY FUNCTIONS ====================
+
+// Get API URL with fallback
+const getApiBaseUrl = (): string => {
+  const envUrl = process.env.NEXT_PUBLIC_API_URL;
+  
+  if (envUrl) {
+    // Ensure URL has protocol
+    if (!envUrl.startsWith('http')) {
+      console.warn('⚠️ API URL missing protocol, adding http://');
+      return `http://${envUrl}`;
+    }
+    return envUrl;
+  }
+  
+  // Default for local development
+  console.warn('⚠️ NEXT_PUBLIC_API_URL not set, using default: http://localhost:5000');
+  return 'http://localhost:5000';
+};
+
+// Convert relative image path to full URL
+const getFullImageUrl = (imagePath: string | undefined): string => {
+  if (!imagePath) {
+    // Return a placeholder image
+    return 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&h=300&fit=crop';
+  }
+  
+  // Already a full URL
+  if (imagePath.startsWith('http')) {
+    return imagePath;
+  }
+  
+  // Handle "undefined" in path
+  if (imagePath.includes('undefined')) {
+    console.error('Found "undefined" in image path:', imagePath);
+    return 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&h=300&fit=crop';
+  }
+  
+  // Convert relative path to full URL
+  const baseUrl = getApiBaseUrl();
+  const cleanPath = imagePath.startsWith('/') ? imagePath.substring(1) : imagePath;
+  
+  return `${baseUrl}/${cleanPath}`;
+};
+
+// Get API URL for requests
+const API_BASE_URL = getApiBaseUrl();
+const API_URL = `${API_BASE_URL}/api`;
+
+// ==================== MAIN COMPONENT ====================
+
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -38,8 +89,6 @@ export default function AdminProductsPage() {
   const [viewingProduct, setViewingProduct] = useState<Product | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const router = useRouter();
-
-  const API_URL=process.env.NEXT_PUBLIC_API_URL
 
   // Check authentication on mount
   useEffect(() => {
@@ -52,7 +101,7 @@ export default function AdminProductsPage() {
   const fetchProducts = async () => {
     try {
       setLoading(true);
-      console.log("Fetching products...");
+      console.log("Fetching products from:", `${API_URL}/products`);
 
       const token = getAuthToken();
       if (!token) {
@@ -60,7 +109,7 @@ export default function AdminProductsPage() {
         return;
       }
 
-      const res = await fetch(`${API_URL}/api/products`, {
+      const res = await fetch(`${API_URL}/products`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -80,13 +129,14 @@ export default function AdminProductsPage() {
       const productsData = data.data || data || [];
 
       const formattedProducts = productsData.map((product: any) => ({
-        _id: product._id || product.id,
+        _id: product._id || product.id || `product-${Date.now()}-${Math.random()}`,
         title: product.title || "No Title",
         description: product.description || "",
         category: product.category || "uncategorized",
-        imageUrl: product.imageUrl || "",
+        // FIXED: Use getFullImageUrl to ensure proper image URLs
+        imageUrl: getFullImageUrl(product.imageUrl),
         normalPrice: product.normalPrice || 0,
-        salePrice: product.salePrice || null,
+        salePrice: product.salePrice || undefined,
         originalPrice: product.originalPrice || product.normalPrice || 0,
         isBestSelling: product.isBestSelling || false,
         isNew: product.isNew || false,
@@ -144,7 +194,7 @@ export default function AdminProductsPage() {
     try {
       console.log("Deleting product:", id);
       
-      const response = await fetch(`${API_URL}/api/products/${id}`, {
+      const response = await fetch(`${API_URL}/products/${id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -210,7 +260,7 @@ export default function AdminProductsPage() {
 
       const newFeaturedStatus = !product.featured;
 
-      const response = await fetch(`${API_URL}/api/products/${id}`, {
+      const response = await fetch(`${API_URL}/products/${id}`, {
         method: 'PATCH',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -278,12 +328,12 @@ export default function AdminProductsPage() {
                 Manage all your products in one place
               </p>
             </div>
-            {/* <button
+            <button
               onClick={() => router.push("/products/create")}
               className="px-6 py-3 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-lg hover:from-amber-600 hover:to-amber-700 font-medium shadow-sm"
             >
               + Add New Product
-            </button> */}
+            </button>
           </div>
 
           <AdminProductsTable

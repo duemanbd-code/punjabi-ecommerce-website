@@ -3,7 +3,7 @@
 import { Product } from "@/components/ProductCard";
 import axios from "axios";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
 // Helper to validate if an object is a valid Product
 const isValidProduct = (item: any): item is Product => {

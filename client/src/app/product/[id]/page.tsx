@@ -2239,7 +2239,7 @@ import { useWishlist } from "@/context/WishlistContext";
 import axios from "axios";
 import ProductCard, { Product } from "@/components/ProductCard";
 
-  const API_URL=process.env.NEXT_PUBLIC_API_URL
+  const API_URL=process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"
 
 // Helper function to get image URL
 const getImageUrl = (url: string) => {

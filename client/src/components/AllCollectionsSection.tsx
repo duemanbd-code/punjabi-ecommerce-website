@@ -16,8 +16,7 @@ import {
 } from "lucide-react";
 import { Product } from "@/types/product.types";
 
-
-  const API_URL=process.env.NEXT_PUBLIC_API_URL
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
 const AllCollectionsSection = () => {
   const [allproduct, setAllproduct] = useState<Product[]>([]);
@@ -40,7 +39,8 @@ const AllCollectionsSection = () => {
 
   // Responsive cards per view
   const getCardsPerView = () => {
-    if (typeof window === "undefined") return { mobile: 1, tablet: 2, laptop: 3, desktop: 4 };
+    if (typeof window === "undefined")
+      return { mobile: 1, tablet: 2, laptop: 3, desktop: 4 };
 
     const width = window.innerWidth;
     if (width < 640) return { current: 1, total: 1 };
@@ -107,7 +107,10 @@ const AllCollectionsSection = () => {
   // Close category filter on outside click
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (categoryFilterRef.current && !categoryFilterRef.current.contains(event.target as Node)) {
+      if (
+        categoryFilterRef.current &&
+        !categoryFilterRef.current.contains(event.target as Node)
+      ) {
         setShowCategoryFilter(false);
       }
     };
@@ -343,8 +346,13 @@ const AllCollectionsSection = () => {
                   rounded-lg font-medium shadow-lg"
               >
                 <Filter className="w-4 h-4" />
-                Filter: {selectedCategory === "all" ? "All Products" : selectedCategory}
-                <ChevronRight className={`w-4 h-4 transition-transform ${showCategoryFilter ? "rotate-90" : ""}`} />
+                Filter:{" "}
+                {selectedCategory === "all" ? "All Products" : selectedCategory}
+                <ChevronRight
+                  className={`w-4 h-4 transition-transform ${
+                    showCategoryFilter ? "rotate-90" : ""
+                  }`}
+                />
               </button>
             </div>
           )}
@@ -456,14 +464,17 @@ const AllCollectionsSection = () => {
             )}
           </div>
         ) : (
-          <div className="relative px-4 sm:px-6 md:px-8 lg:px-10" ref={containerRef}>
+          <div
+            className="relative px-4 sm:px-6 md:px-8 lg:px-10"
+            ref={containerRef}
+          >
             {/* Custom Navigation Buttons - Hide on mobile if only one slide */}
             {totalSlides > 1 && (
               <>
                 <button
                   onClick={handlePrevSlide}
                   className={`absolute left-0 sm:left-2 top-1/2 -translate-y-1/2 z-10 
-                    ${isMobile ? 'w-8 h-8' : 'w-10 h-10 md:w-12 md:h-12'} 
+                    ${isMobile ? "w-8 h-8" : "w-10 h-10 md:w-12 md:h-12"} 
                     bg-white/90 backdrop-blur-sm border border-gray-200 rounded-full shadow-lg 
                     flex items-center justify-center transition-all duration-300 
                     hover:bg-white hover:shadow-xl hover:scale-110 active:scale-95 
@@ -471,13 +482,17 @@ const AllCollectionsSection = () => {
                   aria-label="Previous slide"
                   disabled={currentSlide === 0}
                 >
-                  <ChevronLeft className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5 md:w-6 md:h-6'} text-gray-700`} />
+                  <ChevronLeft
+                    className={`${
+                      isMobile ? "w-4 h-4" : "w-5 h-5 md:w-6 md:h-6"
+                    } text-gray-700`}
+                  />
                 </button>
 
                 <button
                   onClick={handleNextSlide}
                   className={`absolute right-0 sm:right-2 top-1/2 -translate-y-1/2 z-10 
-                    ${isMobile ? 'w-8 h-8' : 'w-10 h-10 md:w-12 md:h-12'} 
+                    ${isMobile ? "w-8 h-8" : "w-10 h-10 md:w-12 md:h-12"} 
                     bg-white/90 backdrop-blur-sm border border-gray-200 rounded-full shadow-lg 
                     flex items-center justify-center transition-all duration-300 
                     hover:bg-white hover:shadow-xl hover:scale-110 active:scale-95 
@@ -485,7 +500,11 @@ const AllCollectionsSection = () => {
                   aria-label="Next slide"
                   disabled={currentSlide === totalSlides - 1}
                 >
-                  <ChevronRight className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5 md:w-6 md:h-6'} text-gray-700`} />
+                  <ChevronRight
+                    className={`${
+                      isMobile ? "w-4 h-4" : "w-5 h-5 md:w-6 md:h-6"
+                    } text-gray-700`}
+                  />
                 </button>
               </>
             )}
@@ -545,7 +564,9 @@ const AllCollectionsSection = () => {
                       onClick={handlePrevSlide}
                       disabled={currentSlide === 0}
                       className={`p-2 rounded-full hover:bg-gray-100 transition-colors ${
-                        currentSlide === 0 ? "opacity-50 cursor-not-allowed" : ""
+                        currentSlide === 0
+                          ? "opacity-50 cursor-not-allowed"
+                          : ""
                       }`}
                       aria-label="Previous slide"
                     >
@@ -553,18 +574,20 @@ const AllCollectionsSection = () => {
                     </button>
 
                     <div className="flex items-center gap-1.5">
-                      {Array.from({ length: Math.min(totalSlides, 5) }).map((_, index) => (
-                        <button
-                          key={index}
-                          onClick={() => goToSlide(index)}
-                          className={`transition-all duration-300 ${
-                            index === currentSlide
-                              ? "w-6 h-2 bg-amber-500 rounded-full"
-                              : "w-1.5 h-1.5 bg-gray-300 rounded-full hover:bg-gray-400"
-                          }`}
-                          aria-label={`Go to slide ${index + 1}`}
-                        />
-                      ))}
+                      {Array.from({ length: Math.min(totalSlides, 5) }).map(
+                        (_, index) => (
+                          <button
+                            key={index}
+                            onClick={() => goToSlide(index)}
+                            className={`transition-all duration-300 ${
+                              index === currentSlide
+                                ? "w-6 h-2 bg-amber-500 rounded-full"
+                                : "w-1.5 h-1.5 bg-gray-300 rounded-full hover:bg-gray-400"
+                            }`}
+                            aria-label={`Go to slide ${index + 1}`}
+                          />
+                        )
+                      )}
                       {totalSlides > 5 && (
                         <span className="text-xs text-gray-500 ml-1">
                           {currentSlide + 1}/{totalSlides}
@@ -592,7 +615,9 @@ const AllCollectionsSection = () => {
                       onClick={handlePrevSlide}
                       disabled={currentSlide === 0}
                       className={`p-2 rounded-full hover:bg-gray-100 transition-colors ${
-                        currentSlide === 0 ? "opacity-50 cursor-not-allowed" : ""
+                        currentSlide === 0
+                          ? "opacity-50 cursor-not-allowed"
+                          : ""
                       }`}
                       aria-label="Previous slide"
                     >
