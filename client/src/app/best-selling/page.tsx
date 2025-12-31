@@ -19,8 +19,9 @@ import {
   Trophy,
   Clock,
 } from "lucide-react";
-import ProductCard, { Product } from "@/components/ProductCard";
 import ProductFilters from "@/components/ProductFilters";
+import { Product } from "@/types/product.types";
+import ProductCard from "@/components/ProductCard";
 
 // Define Size type if needed
 interface SizeObject {

@@ -21,8 +21,9 @@ import {
   Shield,
   Trophy,
 } from "lucide-react";
-import ProductCard, { Product } from "@/components/ProductCard";
 import ProductFilters from "@/components/ProductFilters";
+import { Product } from "@/types/product.types";
+import ProductCard from "@/components/ProductCard";
 
   const API_URL=process.env.NEXT_PUBLIC_API_URL
 

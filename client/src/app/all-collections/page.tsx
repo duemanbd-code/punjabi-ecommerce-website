@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import ProductFilters from "@/components/ProductFilters";
 import { Product } from "@/types/product.types";
+import ProductCard from "@/components/ProductCard";
 
 const AllCollectionsPage = () => {
   // State variables
