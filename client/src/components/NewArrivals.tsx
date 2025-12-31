@@ -3,7 +3,6 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import ProductCard, { Product } from "./ProductCard";
 import {
   ChevronLeft,
   ChevronRight,
@@ -17,6 +16,8 @@ import {
   fetchNewArrivalsProducts,
 } from "@/lib/utils/product.api";
 import Link from "next/link";
+import { Product } from "@/types/product.types";
+import ProductCard from "./ProductCard";
 
 interface Category {
   key: string;

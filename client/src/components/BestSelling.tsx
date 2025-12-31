@@ -4,7 +4,6 @@
 
 import Link from "next/link";
 import { useState, useEffect, useRef, useCallback } from "react";
-import ProductCard, { Product } from "./ProductCard";
 import {
   ChevronLeft,
   ChevronRight,
@@ -17,6 +16,7 @@ import {
   fetchAllProducts,
   fetchBestSellingProducts,
 } from "@/lib/utils/product.api";
+import { Product } from "@/types/product.types";
 
 interface Category {
   key: string;
