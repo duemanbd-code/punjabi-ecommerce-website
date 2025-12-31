@@ -1,18 +1,39 @@
 // client/src/types/product.types.ts
 
 export interface Product {
-  _id: string;           // MongoDB ID
-  id?: string;           // Optional fallback ID
+  _id: string;
+  id?: string;
   title: string;
-  description?: string;
-  category?: string;
-  categoryName?: string; // Sometimes used if frontend wants friendly name
+  name?: string;
+  description: string;
   normalPrice: number;
-  discountedPrice?: number;
-  images?: string[];     // Array of image URLs
+  originalPrice?: number;
+  offerPrice?: number;
+  salePrice?: number;
+  discountPercentage?: number;
+  category: string;
+  image: string;
+  imageUrl?: string;
+  images?: string[];
+  additionalImages?: string[];
+  rating?: number;
+  reviewCount?: number;
+  isBestSelling?: boolean;
+  isNew?: boolean;
+  featured?: boolean;
   stock?: number;
-  isActive?: boolean;
+  sizes?: Array<{
+    size: string;
+    stock: number;
+  }>;
+  colors?: string[];
+  tags?: string[];
+  keywords?: string[];
   createdAt?: string;
-  updatedAt?: string;
-  [key: string]: any;    // For any additional fields coming from backend
+  brand?: string;
+  material?: string;
+  sku?: string;
+  weight?: string;
+  dimensions?: string;
+  careInstructions?: string[];
 }
