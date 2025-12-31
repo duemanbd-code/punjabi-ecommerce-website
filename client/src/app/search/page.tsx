@@ -1,6 +1,8 @@
+// client/src/app/search/page.tsx
+
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Filter, X, ChevronRight, Package, Grid, List } from "lucide-react";
@@ -17,7 +19,8 @@ interface Product {
   slug?: string;
 }
 
-export default function SearchPage() {
+// Main Search Component that uses useSearchParams
+function SearchContent() {
   const searchParams = useSearchParams();
   const query = searchParams.get("q") || "";
   
@@ -31,7 +34,7 @@ export default function SearchPage() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [categories, setCategories] = useState<string[]>([]);
 
-    const API_URL=process.env.NEXT_PUBLIC_API_URL
+  const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
   // Fetch products when query changes
   useEffect(() => {
@@ -45,8 +48,8 @@ export default function SearchPage() {
       setLoading(true);
       setError(null);
       
-      // Fetch products from API
-      const response = await fetch("${API_URL}/api/products");
+      // Fetch products from API - FIXED: Use proper template literal
+      const response = await fetch(`${API_URL}/api/products`);
       
       if (!response.ok) {
         throw new Error("Failed to fetch products");
@@ -525,5 +528,21 @@ function ProductCard({ product, viewMode }: { product: Product, viewMode: "grid"
         </div>
       </div>
     </div>
+  );
+}
+
+// Main Page Component with Suspense
+export default function SearchPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600 mb-4"></div>
+          <p className="text-gray-600">Loading search results...</p>
+        </div>
+      </div>
+    }>
+      <SearchContent />
+    </Suspense>
   );
 }
