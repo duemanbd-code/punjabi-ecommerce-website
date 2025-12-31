@@ -1,19 +1,16 @@
 // client/src/app/layout.tsx
 
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter, Roboto_Mono } from "next/font/google"; // Google Fonts
 import "./globals.css";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
-import Topbar from "@/components/Topbar";
 import Providers from "@/components/Providers";
 
-const geistSans = Geist({
+const geistSans = Inter({
   variable: "--font-geist-sans",
   subsets: ["latin"],
 });
 
-const geistMono = Geist_Mono({
+const geistMono = Roboto_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
 });
