@@ -4,30 +4,40 @@ import mongoose from "mongoose";
 
 export const connectDB = async () => {
   try {
-    const mongoURI = process.env.MONGODB_URI;
+    // TEMPORARY: Hardcode your MongoDB URI for testing
+    const mongoURI = process.env.MONGODB_URI || 
+                    "mongodb+srv://mironhesan_db_user:QfuShgbt2NWPUUmB@puti-cluster.doxgr67.mongodb.net/ecommerce?retryWrites=true&w=majority&appName=puti-cluster";
+    
+    console.log("🔗 Using MongoDB URI:", mongoURI ? "✓" : "✗");
     
     if (!mongoURI) {
-      throw new Error("MONGODB_URI is not defined in environment variables");
+      throw new Error("MongoDB URI is undefined. Check .env file");
     }
     
-    console.log("🔗 Connecting to MongoDB...");
+    console.log("Connecting to MongoDB...");
     
-    await mongoose.connect(mongoURI);
+    await mongoose.connect(mongoURI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    } as mongoose.ConnectOptions);
     
-    console.log("✅ MongoDB connected successfully");
-    
-    // Handle connection events
-    mongoose.connection.on("error", (err) => {
-      console.error("MongoDB connection error:", err);
-    });
-    
-    mongoose.connection.on("disconnected", () => {
-      console.log("MongoDB disconnected");
-    });
+    console.log("✅ MongoDB connected successfully!");
     
   } catch (error: any) {
-    console.error("❌ MongoDB connection failed:", error.message);
-    console.error("Full error:", error);
-    process.exit(1);
+    console.error("❌ MongoDB connection failed!");
+    console.error("Error:", error.message);
+    
+    // Try alternative connection
+    console.log("\nTrying alternative connection...");
+    try {
+      await mongoose.connect("mongodb://localhost:27017/ecommerce", {
+        useNewUrlParser: true,
+        useUnifiedTopology: true,
+      } as mongoose.ConnectOptions);
+      console.log("✅ Connected to local MongoDB instead");
+    } catch (localError: any) {
+      console.error("❌ Local MongoDB also failed:", localError.message);
+      process.exit(1);
+    }
   }
 };
