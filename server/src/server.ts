@@ -6,6 +6,7 @@ dotenv.config();
 import app from "./app";
 import { connectDB } from "./config/db";
 
+// Connect to MongoDB
 connectDB();
 
 const PORT = process.env.PORT || 5000;
