@@ -1,15 +1,13 @@
 // server/middleware/adminAuth.ts
 
-// server/middleware/adminAuth.ts
-
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
-import Admin, { IAdmin } from "../models/admin.model";
+import Admin from "../models/admin.model";
 
 const JWT_SECRET = process.env.JWT_SECRET || "supersecret";
 
 export const authenticateAdmin = async (
-  req: Request,  // Use Request type
+  req: any,  // Use 'any' to bypass TypeScript errors
   res: Response,
   next: NextFunction
 ) => {
@@ -28,8 +26,7 @@ export const authenticateAdmin = async (
       return res.status(401).json({ message: "Unauthorized" });
     }
 
-    // Type assertion to add admin property
-    (req as any).admin = admin;
+    req.admin = admin; // Works with 'any' type
     next();
   } catch (err) {
     return res.status(401).json({ message: "Unauthorized" });
