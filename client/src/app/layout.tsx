@@ -1,24 +1,18 @@
 // client/src/app/layout.tsx
 
 import type { Metadata } from "next";
-import localFont from "next/font/local";
+import { Inter, Roboto_Mono } from "next/font/google";
 import "./globals.css";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
-import Topbar from "@/components/Topbar";
 import Providers from "@/components/Providers";
 
-// Load local Geist font
-const geistSans = localFont({
-  src: "/fonts/Geist.ttf",
-  variable: "--font-geist-sans",
-  display: "swap",
+const inter = Inter({
+  variable: "--font-inter",
+  subsets: ["latin"],
 });
 
-const geistMono = localFont({
-  src: "/fonts/GeistMono.ttf",
-  variable: "--font-geist-mono",
-  display: "swap",
+const robotoMono = Roboto_Mono({
+  variable: "--font-roboto-mono",
+  subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
@@ -32,13 +26,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
+    <html lang="en" className={`${inter.variable} ${robotoMono.variable}`}>
       <body className="antialiased">
         <Providers>
-          <Header />
-          <Topbar />
           <main>{children}</main>
-          <Footer />
         </Providers>
       </body>
     </html>
