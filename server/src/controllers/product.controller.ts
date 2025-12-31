@@ -2,9 +2,15 @@
 
 import { Request, Response } from 'express';
 import Product from '../models/product.models';
-import { AuthRequest } from "../middleware/adminAuth";
 import fs from "fs";
 import path from "path";
+
+// Define AuthRequest locally (FIXED IMPORT)
+interface AuthRequest extends Request {
+  admin?: any;
+  user?: any;
+  files?: any;
+}
 
 // Helper function to delete old image files
 const deleteOldImages = (imagePaths: string | string[]) => {
@@ -28,14 +34,17 @@ const deleteOldImages = (imagePaths: string | string[]) => {
 };
 
 // Create product
-export const createProduct = async (req: AuthRequest, res: Response) => {
+export const createProduct = async (req: Request, res: Response) => {
   try {
+    // Type assertion to AuthRequest
+    const authReq = req as AuthRequest;
+    
     console.log("=== CREATE PRODUCT ===");
-    console.log("Admin:", req.admin?.email);
-    console.log("Files:", req.files);
-    console.log("Body fields:", Object.keys(req.body));
+    console.log("Admin:", authReq.admin?.email);
+    console.log("Files:", authReq.files);
+    console.log("Body fields:", Object.keys(authReq.body));
 
-    if (!req.admin) {
+    if (!authReq.admin) {
       return res.status(401).json({
         success: false,
         message: "Unauthorized access",
@@ -56,10 +65,10 @@ export const createProduct = async (req: AuthRequest, res: Response) => {
       isNew,
       stock,
       keepExistingImage,
-    } = req.body;
+    } = authReq.body;
 
     // Get files
-    const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+    const files = authReq.files as { [fieldname: string]: Express.Multer.File[] };
     
     // Process main image
     let imageUrl = "";
@@ -90,7 +99,7 @@ export const createProduct = async (req: AuthRequest, res: Response) => {
         
         // Create variants from sizes
         variants = sizesArray.map((size: any, index: number) => ({
-          sku: `${req.body.sku || `VAR-${Date.now()}-${index}`}`,
+          sku: `${authReq.body.sku || `VAR-${Date.now()}-${index}`}`,
           size: size.size || "M",
           stockQuantity: parseInt(size.stock) || 0,
           reservedQuantity: 0,
@@ -106,7 +115,7 @@ export const createProduct = async (req: AuthRequest, res: Response) => {
     }
 
     // Generate SKU from title if not provided
-    let sku = req.body.sku;
+    let sku = authReq.body.sku;
     if (!sku && title) {
       const titleAbbr = title
         .split(' ')
@@ -148,7 +157,7 @@ export const createProduct = async (req: AuthRequest, res: Response) => {
       isNewProduct: isNew === "true" || isNew === true,
       isBestSelling: isBestSelling === "true" || isBestSelling === true,
       featured: featured === "true" || featured === true,
-      productStatus: req.body.productStatus || "active",
+      productStatus: authReq.body.productStatus || "active",
       inventoryStatus,
       imageUrl,
       images: additionalImages,
@@ -156,7 +165,7 @@ export const createProduct = async (req: AuthRequest, res: Response) => {
       hasVariants: variants.length > 0,
       variants: variants,
       tags: tags ? JSON.parse(tags) : [],
-      createdBy: req.admin._id,
+      createdBy: authReq.admin._id,
     };
 
     console.log("Creating product:", productData.title);
@@ -181,14 +190,17 @@ export const createProduct = async (req: AuthRequest, res: Response) => {
 };
 
 // Update product
-export const updateProduct = async (req: AuthRequest, res: Response) => {
+export const updateProduct = async (req: Request, res: Response) => {
   try {
+    // Type assertion to AuthRequest
+    const authReq = req as AuthRequest;
+    
     console.log("=== UPDATE PRODUCT ===");
-    console.log("Product ID:", req.params.id);
-    console.log("Admin:", req.admin?.email);
-    console.log("Files:", req.files);
+    console.log("Product ID:", authReq.params.id);
+    console.log("Admin:", authReq.admin?.email);
+    console.log("Files:", authReq.files);
 
-    if (!req.admin) {
+    if (!authReq.admin) {
       return res.status(401).json({
         success: false,
         message: "Unauthorized",
@@ -196,7 +208,7 @@ export const updateProduct = async (req: AuthRequest, res: Response) => {
     }
 
     // Find existing product first
-    const existingProduct = await Product.findById(req.params.id);
+    const existingProduct = await Product.findById(authReq.params.id);
     if (!existingProduct) {
       return res.status(404).json({
         success: false,
@@ -205,39 +217,39 @@ export const updateProduct = async (req: AuthRequest, res: Response) => {
     }
 
     const updateData: any = {};
-    const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+    const files = authReq.files as { [fieldname: string]: Express.Multer.File[] };
 
     // Parse basic fields
-    if (req.body.title !== undefined) updateData.title = req.body.title;
-    if (req.body.description !== undefined) updateData.description = req.body.description;
-    if (req.body.category !== undefined) updateData.category = req.body.category;
-    if (req.body.normalPrice !== undefined) updateData.normalPrice = parseFloat(req.body.normalPrice);
-    if (req.body.originalPrice !== undefined) updateData.originalPrice = parseFloat(req.body.originalPrice);
-    if (req.body.salePrice !== undefined) updateData.salePrice = parseFloat(req.body.salePrice);
-    if (req.body.sku !== undefined) updateData.sku = req.body.sku;
+    if (authReq.body.title !== undefined) updateData.title = authReq.body.title;
+    if (authReq.body.description !== undefined) updateData.description = authReq.body.description;
+    if (authReq.body.category !== undefined) updateData.category = authReq.body.category;
+    if (authReq.body.normalPrice !== undefined) updateData.normalPrice = parseFloat(authReq.body.normalPrice);
+    if (authReq.body.originalPrice !== undefined) updateData.originalPrice = parseFloat(authReq.body.originalPrice);
+    if (authReq.body.salePrice !== undefined) updateData.salePrice = parseFloat(authReq.body.salePrice);
+    if (authReq.body.sku !== undefined) updateData.sku = authReq.body.sku;
 
     // Parse boolean fields - use new field names
-    if (req.body.featured !== undefined) {
-      updateData.featured = req.body.featured === "true" || req.body.featured === true;
+    if (authReq.body.featured !== undefined) {
+      updateData.featured = authReq.body.featured === "true" || authReq.body.featured === true;
     }
-    if (req.body.isBestSelling !== undefined) {
-      updateData.isBestSelling = req.body.isBestSelling === "true" || req.body.isBestSelling === true;
+    if (authReq.body.isBestSelling !== undefined) {
+      updateData.isBestSelling = authReq.body.isBestSelling === "true" || authReq.body.isBestSelling === true;
     }
-    if (req.body.isNew !== undefined) {
-      updateData.isNewProduct = req.body.isNew === "true" || req.body.isNew === true;
+    if (authReq.body.isNew !== undefined) {
+      updateData.isNewProduct = authReq.body.isNew === "true" || authReq.body.isNew === true;
     }
 
     // Handle product status
-    if (req.body.productStatus !== undefined) {
-      updateData.productStatus = req.body.productStatus;
-    } else if (req.body.status !== undefined) {
-      updateData.productStatus = req.body.status;
+    if (authReq.body.productStatus !== undefined) {
+      updateData.productStatus = authReq.body.productStatus;
+    } else if (authReq.body.status !== undefined) {
+      updateData.productStatus = authReq.body.status;
     }
 
     // Parse sizes and update variants
-    if (req.body.sizes) {
+    if (authReq.body.sizes) {
       try {
-        const sizesArray = JSON.parse(req.body.sizes);
+        const sizesArray = JSON.parse(authReq.body.sizes);
         const totalStock = sizesArray.reduce((acc: number, s: any) => acc + (parseInt(s.stock) || 0), 0);
         
         updateData.hasVariants = true;
@@ -258,8 +270,8 @@ export const updateProduct = async (req: AuthRequest, res: Response) => {
     }
 
     // Handle stock updates if no sizes provided
-    if (req.body.stock !== undefined && !req.body.sizes) {
-      updateData.stockQuantity = parseInt(req.body.stock) || 0;
+    if (authReq.body.stock !== undefined && !authReq.body.sizes) {
+      updateData.stockQuantity = parseInt(authReq.body.stock) || 0;
       updateData.availableQuantity = updateData.stockQuantity - (existingProduct.reservedQuantity || 0);
     }
 
@@ -274,9 +286,9 @@ export const updateProduct = async (req: AuthRequest, res: Response) => {
       }
     }
 
-    if (req.body.tags) {
+    if (authReq.body.tags) {
       try {
-        updateData.tags = JSON.parse(req.body.tags);
+        updateData.tags = JSON.parse(authReq.body.tags);
       } catch (e) {
         console.error("Error parsing tags:", e);
       }
@@ -289,7 +301,7 @@ export const updateProduct = async (req: AuthRequest, res: Response) => {
         deleteOldImages(existingProduct.imageUrl);
       }
       updateData.imageUrl = `/uploads/${files.image[0].filename}`;
-    } else if (req.body.keepExistingImage !== "true") {
+    } else if (authReq.body.keepExistingImage !== "true") {
       // If no new image and not keeping existing, remove image
       if (existingProduct.imageUrl) {
         deleteOldImages(existingProduct.imageUrl);
@@ -308,7 +320,7 @@ export const updateProduct = async (req: AuthRequest, res: Response) => {
         (file) => `/uploads/${file.filename}`
       );
       updateData.images = updateData.additionalImages;
-    } else if (req.body.keepExistingAdditionalImages !== "true") {
+    } else if (authReq.body.keepExistingAdditionalImages !== "true") {
       // If no new additional images and not keeping existing, clear them
       if (existingProduct.additionalImages && existingProduct.additionalImages.length > 0) {
         deleteOldImages(existingProduct.additionalImages);
@@ -320,7 +332,7 @@ export const updateProduct = async (req: AuthRequest, res: Response) => {
     console.log("Update data:", updateData);
 
     const product = await Product.findByIdAndUpdate(
-      req.params.id,
+      authReq.params.id,
       updateData,
       {
         new: true,
@@ -351,7 +363,7 @@ export const updateProduct = async (req: AuthRequest, res: Response) => {
 };
 
 // Get all products
-export const getAllProducts = async (_req: AuthRequest, res: Response) => {
+export const getAllProducts = async (_req: Request, res: Response) => {
   try {
     console.log("=== GET ALL PRODUCTS ===");
 
@@ -416,7 +428,7 @@ export const getAllProducts = async (_req: AuthRequest, res: Response) => {
 };
 
 // Get product by ID
-export const getProductById = async (req: AuthRequest, res: Response) => {
+export const getProductById = async (req: Request, res: Response) => {
   try {
     console.log("=== GET PRODUCT BY ID ===");
     console.log("Product ID:", req.params.id);
@@ -496,13 +508,16 @@ export const getProductById = async (req: AuthRequest, res: Response) => {
 };
 
 // Delete product
-export const deleteProduct = async (req: AuthRequest, res: Response) => {
+export const deleteProduct = async (req: Request, res: Response) => {
   try {
+    // Type assertion to AuthRequest
+    const authReq = req as AuthRequest;
+    
     console.log("=== DELETE PRODUCT ===");
-    console.log("Product ID:", req.params.id);
-    console.log("Admin:", req.admin?.email);
+    console.log("Product ID:", authReq.params.id);
+    console.log("Admin:", authReq.admin?.email);
 
-    if (!req.admin) {
+    if (!authReq.admin) {
       return res.status(401).json({
         success: false,
         message: "Unauthorized access",
@@ -510,7 +525,7 @@ export const deleteProduct = async (req: AuthRequest, res: Response) => {
     }
 
     // Check if product exists first
-    const existingProduct = await Product.findById(req.params.id);
+    const existingProduct = await Product.findById(authReq.params.id);
     if (!existingProduct) {
       return res.status(404).json({
         success: false,
@@ -530,7 +545,7 @@ export const deleteProduct = async (req: AuthRequest, res: Response) => {
     }
 
     // Delete the product
-    const product = await Product.findByIdAndDelete(req.params.id);
+    const product = await Product.findByIdAndDelete(authReq.params.id);
 
     if (!product) {
       return res.status(404).json({
@@ -560,7 +575,7 @@ export const deleteProduct = async (req: AuthRequest, res: Response) => {
 };
 
 // Get products by category
-export const getProductsByCategory = async (req: AuthRequest, res: Response) => {
+export const getProductsByCategory = async (req: Request, res: Response) => {
   try {
     const products = await Product.find({
       category: req.params.slug,
