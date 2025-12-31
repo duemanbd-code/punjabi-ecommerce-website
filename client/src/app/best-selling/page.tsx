@@ -56,7 +56,7 @@ const BestSellingPage = () => {
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [itemsPerPage] = useState<number>(12);
 
-    const API_URL=process.env.NEXT_PUBLIC_API_URL
+  const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
   // Fetch all products and filter best selling
   useEffect(() => {
@@ -98,26 +98,23 @@ const BestSellingPage = () => {
         // Extract unique sizes - handle both string array and object array
         const uniqueSizes = new Set<string>();
         bestSellingProducts.forEach((product) => {
-          if (product.sizes) {
-            if (Array.isArray(product.sizes)) {
-              // Check if sizes is array of strings or objects
-              if (product.sizes.length > 0) {
-                if (typeof product.sizes[0] === "string") {
-                  // It's an array of strings
-                  (product.sizes as string[]).forEach((size) =>
-                    uniqueSizes.add(size)
-                  );
-                } else if (
-                  typeof product.sizes[0] === "object" &&
-                  product.sizes[0] !== null
-                ) {
-                  // It's an array of objects
-                  (product.sizes as SizeObject[]).forEach((sizeObj) => {
-                    if (sizeObj.size) uniqueSizes.add(sizeObj.size);
-                  });
-                }
+          if (
+            product.sizes &&
+            Array.isArray(product.sizes) &&
+            product.sizes.length > 0
+          ) {
+            // Handle both string array and object array
+            product.sizes.forEach((sizeItem) => {
+              if (typeof sizeItem === "string") {
+                uniqueSizes.add(sizeItem);
+              } else if (
+                typeof sizeItem === "object" &&
+                sizeItem !== null &&
+                "size" in sizeItem
+              ) {
+                uniqueSizes.add((sizeItem as SizeObject).size);
               }
-            }
+            });
           }
         });
 
