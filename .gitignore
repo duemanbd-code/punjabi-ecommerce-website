@@ -1,0 +1,46 @@
+# ==============================
+# Node.js dependencies
+# ==============================
+**/node_modules/
+
+# ==============================
+# Build / Output folders
+# ==============================
+admin/dist/
+client/.next/
+server/dist/
+
+# ==============================
+# Environment files
+# ==============================
+*.env*
+!.env.example  # keep example env if you have one
+
+# ==============================
+# Logs
+# ==============================
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ==============================
+# OS & Editor files
+# ==============================
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# macOS
+.DS_Store
+
+# VSCode
+.vscode/
+.history/
+
+# ==============================
+# Misc
+# ==============================
+*.pid
+*.seed
