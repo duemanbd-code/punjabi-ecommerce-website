@@ -1,18 +1,24 @@
 // client/src/app/layout.tsx
 
 import type { Metadata } from "next";
-import { Inter, Roboto_Mono } from "next/font/google"; // Google Fonts
+import localFont from "next/font/local";
 import "./globals.css";
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
+import Topbar from "@/components/Topbar";
 import Providers from "@/components/Providers";
 
-const geistSans = Inter({
+// Load local Geist font
+const geistSans = localFont({
+  src: "/fonts/Geist.ttf",
   variable: "--font-geist-sans",
-  subsets: ["latin"],
+  display: "swap",
 });
 
-const geistMono = Roboto_Mono({
+const geistMono = localFont({
+  src: "/fonts/GeistMono.ttf",
   variable: "--font-geist-mono",
-  subsets: ["latin"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -29,7 +35,10 @@ export default function RootLayout({
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
       <body className="antialiased">
         <Providers>
+          <Header />
+          <Topbar />
           <main>{children}</main>
+          <Footer />
         </Providers>
       </body>
     </html>
