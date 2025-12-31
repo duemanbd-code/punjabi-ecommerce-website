@@ -156,33 +156,25 @@ const BestSellingPage = () => {
   }, []);
 
   // Check if product has selected size (handles both string and object arrays)
-  const hasSelectedSize = useCallback(
-    (product: Product, selectedSizes: string[]): boolean => {
-      if (selectedSizes.length === 0) return true;
+const hasSelectedSize = useCallback(
+  (product: Product, selectedSizes: string[]): boolean => {
+    if (selectedSizes.length === 0) return true;
 
-      if (!product.sizes || !Array.isArray(product.sizes)) return false;
+    if (!product.sizes || !Array.isArray(product.sizes)) return false;
 
-      const productSizes = product.sizes;
-
-      // Handle string array
-      if (typeof productSizes[0] === "string") {
-        return (productSizes as string[]).some((size) =>
-          selectedSizes.includes(size)
-        );
+    // Check each size item individually
+    return product.sizes.some((sizeItem) => {
+      if (typeof sizeItem === "string") {
+        return selectedSizes.includes(sizeItem);
+      } else if (typeof sizeItem === "object" && sizeItem !== null && "size" in sizeItem) {
+        const sizeObj = sizeItem as SizeObject;
+        return sizeObj.size && selectedSizes.includes(sizeObj.size);
       }
-
-      // Handle object array
-      if (typeof productSizes[0] === "object") {
-        return (productSizes as SizeObject[]).some(
-          (sizeObj) => sizeObj.size && selectedSizes.includes(sizeObj.size)
-        );
-      }
-
       return false;
-    },
-    []
-  );
-
+    });
+  },
+  []
+);
   // Apply filters
   useEffect(() => {
     let result = [...products];
