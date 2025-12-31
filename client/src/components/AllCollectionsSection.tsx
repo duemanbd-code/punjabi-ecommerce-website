@@ -86,7 +86,7 @@ const AllCollectionsPage = () => {
         setCategories(["all", ...Array.from(uniqueCategories)]);
       } catch (error) {
         console.error("Error fetching products:", error);
-        setError("Failed to load products. Please try again later.");
+        setError("Failed to load any products. Please try again later.");
       } finally {
         setLoading(false);
       }
