@@ -41,6 +41,7 @@ export interface Product {
   brand?: string;
   sizes?: any[];
   colors?: any[];
+  tags?: string[];
 }
 
 interface ProductCardProps {
