@@ -1,14 +1,15 @@
 // server/middleware/adminAuth.ts
 
+// server/middleware/adminAuth.ts
+
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import Admin, { IAdmin } from "../models/admin.model";
 
 const JWT_SECRET = process.env.JWT_SECRET || "supersecret";
 
-// Use the global Express Request type (it already has admin property)
 export const authenticateAdmin = async (
-  req: Request,  // Just use Request, not AuthRequest
+  req: Request,  // Use Request type
   res: Response,
   next: NextFunction
 ) => {
@@ -27,7 +28,8 @@ export const authenticateAdmin = async (
       return res.status(401).json({ message: "Unauthorized" });
     }
 
-    req.admin = admin; // This will work with our type declaration
+    // Type assertion to add admin property
+    (req as any).admin = admin;
     next();
   } catch (err) {
     return res.status(401).json({ message: "Unauthorized" });

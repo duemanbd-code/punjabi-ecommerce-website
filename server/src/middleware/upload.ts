@@ -16,8 +16,8 @@ const storage = multer.diskStorage({
   },
 });
 
-// File filter
-const fileFilter = (req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+// File filter - use 'any' type
+const fileFilter = (req: any, file: any, cb: any) => {
   const allowedTypes = [
     "image/jpeg",
     "image/jpg",
@@ -46,7 +46,7 @@ export const upload = multer({
 export const uploadProductImages = (req: any, res: any, next: any) => {
   const uploadMiddleware = upload.fields([
     { name: "image", maxCount: 1 },
-    { name: "additionalImages", maxCount: 4 }, // Limit to 4 additional images
+    { name: "additionalImages", maxCount: 4 },
   ]);
 
   uploadMiddleware(req, res, (err: any) => {
