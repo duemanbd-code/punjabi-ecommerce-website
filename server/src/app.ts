@@ -13,8 +13,8 @@ const app = express();
 const allowedOrigins = [
   "http://localhost:3000",
   "http://localhost:4000",
-  process.env.CLIENT_URL,
-  process.env.ADMIN_URL,
+  "https://puti-clientadmin-gq99cp9ey-mironhesan-team.vercel.app",
+  "https://taskin-panjabiclient-5vaszgend-mironhesan-team.vercel.app",
 ].filter(Boolean) as string[];
 
 app.use(

@@ -7,7 +7,6 @@ const nextConfig = {
     ignoreDuringBuilds: true,
   },
   images: {
-    domains: ['localhost', 'taskin-panjabi-server.onrender.com'],
     unoptimized: true,
   },
 };
