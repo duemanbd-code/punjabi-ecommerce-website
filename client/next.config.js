@@ -6,6 +6,10 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  images: {
+    domains: ['localhost', 'taskin-panjabi-server.onrender.com'],
+    unoptimized: true,
+  },
 };
 
 module.exports = nextConfig;
