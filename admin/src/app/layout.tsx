@@ -3,7 +3,7 @@
 import AdminSidebar from "../components/AdminSidebar";
 import Topbar from "../components/Topbar";
 import ProtectedRoute from "../components/ProtectedRoute";
-import "../styles/globals.css";
+import "./globals.css";
 
 export default function RootLayout({ children, }: { children: React.ReactNode }) {
   return (
