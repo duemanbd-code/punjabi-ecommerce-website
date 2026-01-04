@@ -17,6 +17,7 @@ import {
   fetchBestSellingProducts,
 } from "@/lib/utils/product.api";
 import { Product } from "@/types/product.types";
+import ProductCard from "./ProductCard";
 
 interface Category {
   key: string;

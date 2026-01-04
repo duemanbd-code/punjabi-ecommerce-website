@@ -12,7 +12,7 @@ export default function AdminLoginPage() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  const API_URL=process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"
+  const API_URL=process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,7 +57,7 @@ export default function AdminLoginPage() {
       console.error("Login error:", err);
       
       if (err.message.includes("NetworkError") || err.message.includes("Failed to fetch")) {
-        toast.error("Cannot connect to server. Make sure backend is running on http://localhost:5000");
+        toast.error("Cannot connect to server. Make sure backend is running on http://localhost:4000");
       } else {
         toast.error(err.message || "Login failed. Please try again.");
       }
@@ -85,7 +85,7 @@ export default function AdminLoginPage() {
               </label>
               <input
                 type="email"
-                placeholder="admin@example.com"
+                placeholder="admin@gmail.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"

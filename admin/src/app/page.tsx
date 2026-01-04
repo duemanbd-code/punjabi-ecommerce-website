@@ -1,73 +1,132 @@
 // admin/src/app/page.tsx
 
+// admin/src/app/login/page.tsx
+
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import { ShieldCheck, LayoutDashboard, LogOut } from "lucide-react";
+import { toast } from "react-hot-toast";
 
-export default function AdminWelcomePage() {
+export default function AdminLoginPage() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
-  const [loading, setLoading] = useState(true);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-  useEffect(() => {
-    const token = localStorage.getItem("admin-token");
-    setIsLoggedIn(!!token);
-    setLoading(false);
-  }, []);
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen text-slate-500">
-        Checking admin session...
-      </div>
-    );
-  }
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !password) {
+      toast.error("Please fill all fields");
+      return;
+    }
 
-  // 🔒 Not logged in → redirect to login
-  if (!isLoggedIn) {
-    router.push("/login");
-    return null;
-  }
+    setLoading(true);
+    try {
+      console.log("Attempting login...");
+      
+      const res = await fetch(`${API_URL}/api/admin/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: email.trim(),
+          password,
+        }),
+      });
 
-  // ✅ Logged in → Welcome screen
+      const data = await res.json();
+      console.log("Login response:", data);
+      
+      if (!res.ok) {
+        throw new Error(data.message || "Login failed");
+      }
+
+      const token = data.token;
+      if (!token) throw new Error("No token received");
+
+      localStorage.setItem("admin-token", token); 
+      localStorage.setItem("admin-user", JSON.stringify(data.admin || {}));
+      
+      toast.success("Login successful!");
+      router.push("/dashboard"); // Go to dashboard
+      
+    } catch (err: any) {
+      console.error("Login error:", err);
+      
+      if (err.message.includes("NetworkError") || err.message.includes("Failed to fetch")) {
+        toast.error("Cannot connect to server. Make sure backend is running on http://localhost:4000");
+      } else {
+        toast.error(err.message || "Login failed. Please try again.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4">
-      <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-8 text-center">
-        
-        <div className="flex justify-center mb-4">
-          <ShieldCheck className="w-14 h-14 text-amber-600" />
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        <div className="text-center mb-8">
+          <div className="w-16 h-16 bg-amber-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <span className="text-white text-2xl font-bold">A</span>
+          </div>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Admin Portal</h1>
+          <p className="text-gray-600">Sign in to manage your products</p>
         </div>
 
-        <h1 className="text-3xl font-bold text-slate-800 mb-2">
-          Welcome, Admin
-        </h1>
+        <form onSubmit={handleLogin} className="bg-white rounded-2xl shadow-xl p-8">
+          <div className="space-y-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Email Address
+              </label>
+              <input
+                type="email"
+                placeholder="admin@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                required
+              />
+            </div>
 
-        <p className="text-slate-500 mb-8">
-          You are logged in to the admin panel.  
-          Manage products, orders, and settings from here.
-        </p>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Password
+              </label>
+              <input
+                type="password"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                required
+              />
+            </div>
 
-        <div className="flex flex-col gap-3">
-          <button
-            onClick={() => router.push("/dashboard")}
-            className="flex items-center justify-center gap-2 bg-amber-600 hover:bg-amber-700 text-white py-3 rounded-xl font-semibold transition"
-          >
-            <LayoutDashboard size={18} />
-            Go to Dashboard
-          </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-amber-500 text-white py-3 px-4 rounded-lg hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? (
+                <div className="flex items-center justify-center gap-2">
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  Signing in...
+                </div>
+              ) : (
+                "Sign In"
+              )}
+            </button>
+          </div>
+        </form>
 
-          <button
-            onClick={() => {
-              localStorage.removeItem("admin-token");
-              router.push("/login");
-            }}
-            className="flex items-center justify-center gap-2 border border-slate-300 text-slate-600 hover:bg-slate-100 py-3 rounded-xl transition"
-          >
-            <LogOut size={18} />
-            Logout
-          </button>
+        <div className="mt-6 text-center text-sm text-gray-500">
+          <p>Demo: admin@gmail.com / admin123</p>
         </div>
       </div>
     </div>

@@ -5,12 +5,12 @@ import { getAuthHeaders } from "../utils/auth";
 // ==================== CONFIGURATION ====================
 const getBaseUrl = () => {
   // Always provide a fallback for local development
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
   
   // Validate the URL
   if (!baseUrl.startsWith('http')) {
     console.error('❌ Invalid API URL:', baseUrl);
-    return "http://localhost:5000"; // Fallback to localhost
+    return "http://localhost:4000"; // Fallback to localhost
   }
   
   return baseUrl;

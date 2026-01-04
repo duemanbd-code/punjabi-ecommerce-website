@@ -5,8 +5,7 @@ import mongoose from "mongoose";
 export const connectDB = async () => {
   try {
     // TEMPORARY: Hardcode your MongoDB URI for testing
-    const mongoURI = process.env.MONGODB_URI || 
-                    "mongodb+srv://mironhesan_db_user:QfuShgbt2NWPUUmB@puti-cluster.doxgr67.mongodb.net/ecommerce?retryWrites=true&w=majority&appName=puti-cluster";
+    const mongoURI = process.env.MONGODB_URI || "mongodb+srv://mironhesan_db_user:pitimach123@cluster0.uitrnmm.mongodb.net/?appName=Cluster0";
     
     console.log("🔗 Using MongoDB URI:", mongoURI ? "✓" : "✗");
     

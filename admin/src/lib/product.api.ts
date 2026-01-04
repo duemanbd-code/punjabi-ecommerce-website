@@ -3,7 +3,7 @@
 import { getAuthHeaders } from "../utils/auth";
 
 // FIX: Add fallback for API_URL
-const API_URL = `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api`;
+const API_URL = `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"}/api`;
 
 export const productApi = {
   // Get inventory report

@@ -14,14 +14,14 @@ export interface IAdmin extends Document {
 const AdminSchema = new Schema<IAdmin>(
   {
     name: { type: String, required: true },
-    email: { type: String, required: true, unique: true },
+    email: { type: String, required: true, unique: true, lowercase: true }, // lowercase ensures case-insensitive
     password: { type: String, required: true },
     role: { type: String, default: "admin" },
   },
   { timestamps: true }
 );
 
-// Hash password before save
+// Hash password before save (only once)
 AdminSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();
   this.password = await bcrypt.hash(this.password, 10);

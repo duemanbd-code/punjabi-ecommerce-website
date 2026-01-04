@@ -22,7 +22,7 @@ export const loginAdmin = async (req: Request, res: Response) => {
     const token = jwt.sign(
       { id: admin._id, role: admin.role },
       process.env.JWT_SECRET!,
-      { expiresIn: "7d" }
+      { expiresIn: "30d" }
     );
 
     // 🔥 THIS RESPONSE WAS MISSING IN YOUR PROJECT

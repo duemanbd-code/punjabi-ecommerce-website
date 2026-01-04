@@ -70,56 +70,55 @@ export default function CartPage() {
   const [orderNumber, setOrderNumber] = useState("");
   const [estimatedDelivery, setEstimatedDelivery] = useState("");
 
-    const API_URL=process.env.NEXT_PUBLIC_API_URL
+  // ✅ FIXED: Properly define API_URL with fallback
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
   // Form validation errors
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Calculate totals based on delivery type
-// client/src/app/cart/page.tsx - UPDATED calculateTotals function
+  const calculateTotals = useCallback(() => {
+    let subtotal = 0;
+    let discountTotal = 0;
+    let itemsCount = 0;
 
-const calculateTotals = useCallback(() => {
-  let subtotal = 0;
-  let discountTotal = 0;
-  let itemsCount = 0;
+    cart.forEach((item) => {
+      // Determine the price to use for calculation
+      let effectivePrice = item.price;
+      let itemNormalPrice = item.normalPrice || item.originalPrice || item.price;
+      
+      // Check if there's an offer price
+      if (item.offerPrice && item.offerPrice < itemNormalPrice) {
+        effectivePrice = item.offerPrice;
+      }
+      // Check if there's a sale price
+      else if (item.salePrice && item.salePrice < itemNormalPrice) {
+        effectivePrice = item.salePrice;
+      }
+      
+      subtotal += effectivePrice * item.quantity;
+      
+      // Calculate discount if any
+      if (effectivePrice < itemNormalPrice) {
+        discountTotal += (itemNormalPrice - effectivePrice) * item.quantity;
+      }
+      
+      itemsCount += item.quantity;
+    });
 
-  cart.forEach((item) => {
-    // Determine the price to use for calculation
-    let effectivePrice = item.price;
-    let itemNormalPrice = item.normalPrice || item.originalPrice || item.price;
-    
-    // Check if there's an offer price
-    if (item.offerPrice && item.offerPrice < itemNormalPrice) {
-      effectivePrice = item.offerPrice;
-    }
-    // Check if there's a sale price
-    else if (item.salePrice && item.salePrice < itemNormalPrice) {
-      effectivePrice = item.salePrice;
-    }
-    
-    subtotal += effectivePrice * item.quantity;
-    
-    // Calculate discount if any
-    if (effectivePrice < itemNormalPrice) {
-      discountTotal += (itemNormalPrice - effectivePrice) * item.quantity;
-    }
-    
-    itemsCount += item.quantity;
-  });
+    // Shipping charge based on delivery type
+    const shippingCharge = deliveryType === "dhaka" ? 50 : 80;
+    const finalTotal = subtotal + shippingCharge;
 
-  // Shipping charge based on delivery type
-  const shippingCharge = deliveryType === "dhaka" ? 50 : 80;
-  const finalTotal = subtotal + shippingCharge;
-
-  return {
-    subtotal,
-    discountTotal,
-    shippingCharge,
-    finalTotal,
-    itemsCount,
-    deliveryType,
-  };
-}, [cart, deliveryType]);
+    return {
+      subtotal,
+      discountTotal,
+      shippingCharge,
+      finalTotal,
+      itemsCount,
+      deliveryType,
+    };
+  }, [cart, deliveryType]);
 
   const totals = calculateTotals();
 
@@ -167,7 +166,7 @@ const calculateTotals = useCallback(() => {
     return Object.keys(newErrors).length === 0;
   };
 
-  // Place order function - UPDATED to match backend schema
+  // ✅ FIXED: Place order function with proper API_URL
   const placeOrder = async () => {
     if (!validateForm()) return;
 
@@ -176,35 +175,40 @@ const calculateTotals = useCallback(() => {
     try {
       // Transform cart items to match backend order item interface
       const orderItems = cart.map(item => ({
-        productId: item.id,
-        title: item.title,
-        price: item.offerPrice || item.price, // Use offer price if available
+        productId: item.id || item._id,
+        title: item.title || item.name,
+        price: item.offerPrice || item.salePrice || item.price,
+        normalPrice: item.normalPrice || item.price,
+        originalPrice: item.originalPrice,
         image: item.image,
         quantity: item.quantity,
-        size: item.size || undefined,
+        size: item.size || "M",
         color: item.color || undefined,
+        category: item.category,
       }));
 
-      // UPDATED: Create order data that matches backend schema
+      // Order data that matches backend schema
       const orderData = {
         orderNumber,
         shippingInfo,
         paymentMethod: "cod",
         deliveryType,
-        items: orderItems, // ✅ Changed from 'cartItems' to 'items'
-        subtotal: totals.subtotal, // ✅ Direct field, not nested
-        discountTotal: totals.discountTotal || 0, // ✅ Direct field
-        shippingCharge: totals.shippingCharge, // ✅ Direct field
-        total: totals.finalTotal, // ✅ Changed from 'finalTotal' to 'total'
+        items: orderItems,
+        subtotal: totals.subtotal,
+        discount: totals.discountTotal || 0,
+        shippingCharge: totals.shippingCharge,
+        total: totals.finalTotal,
         estimatedDelivery,
         status: "pending",
         paymentStatus: "pending",
       };
 
-      console.log('Sending order data:', orderData); // Debug log
+      console.log('Sending order data:', orderData);
+      console.log('API_URL:', API_URL);
+      console.log('Fetch URL:', `${API_URL}/api/orders`);
 
-      // Send order to backend
-      const response = await fetch("${API_URL}/api/orders", {
+      // ✅ FIXED: Use backticks for template literal
+      const response = await fetch(`${API_URL}/api/orders`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -212,7 +216,7 @@ const calculateTotals = useCallback(() => {
         body: JSON.stringify(orderData),
       });
 
-      console.log('Response status:', response.status); // Debug log
+      console.log('Response status:', response.status);
       
       if (!response.ok) {
         const errorText = await response.text();
@@ -221,7 +225,7 @@ const calculateTotals = useCallback(() => {
       }
 
       const data = await response.json();
-      console.log('Server response:', data); // Debug log
+      console.log('Server response:', data);
 
       if (data.success) {
         // Clear cart
@@ -234,6 +238,10 @@ const calculateTotals = useCallback(() => {
         // Redirect to order confirmation page
         if (data.data && data.data._id) {
           router.push(`/order-confirmation/${data.data._id}`);
+        } else if (data.order && data.order._id) {
+          router.push(`/order-confirmation/${data.order._id}`);
+        } else if (data.orderId) {
+          router.push(`/order-confirmation/${data.orderId}`);
         }
         
         toast.success("Order placed successfully!");
