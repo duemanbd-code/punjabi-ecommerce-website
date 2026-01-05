@@ -9,14 +9,46 @@ import { useWishlist } from "@/context/WishlistContext";
 import axios from "axios";
 import ProductCard from "@/components/ProductCard";
 
-  const API_URL=process.env.NEXT_PUBLIC_API_URL
-
 // Helper to get image URL
 const getImageUrl = (url: string) => {
   if (!url) return "";
+  
+  // If URL is already a full URL (http/https/data), return as is
   if (url.startsWith("http") || url.startsWith("data:")) return url;
-  if (url.startsWith("/uploads")) return `${API_URL}${url}`;
-  if (url.startsWith("/")) return `${API_URL}${url}`;
+  
+  // If URL starts with /uploads, prepend appropriate API URL
+  if (url.startsWith("/uploads")) {
+    // Check if we're in development or production
+    const isLocalhost = typeof window !== 'undefined' && 
+      (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+    
+    const API_URL = isLocalhost 
+      ? 'http://localhost:4000' 
+      : 'https://taskin-panjabi-server.onrender.com';
+    
+    return `${API_URL}${url}`;
+  }
+  
+  // For relative paths, prepend appropriate API URL
+  if (url.startsWith("/")) {
+    const isLocalhost = typeof window !== 'undefined' && 
+      (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+    
+    const API_URL = isLocalhost 
+      ? 'http://localhost:4000' 
+      : 'https://taskin-panjabi-server.onrender.com';
+    
+    return `${API_URL}${url}`;
+  }
+  
+  // For bare filenames, construct the full URL
+  const isLocalhost = typeof window !== 'undefined' && 
+    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+  
+  const API_URL = isLocalhost 
+    ? 'http://localhost:4000' 
+    : 'https://taskin-panjabi-server.onrender.com';
+  
   return `${API_URL}/uploads/${url}`;
 };
 
@@ -29,6 +61,18 @@ export default function WishlistPage() {
   const [isClearing, setIsClearing] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
+
+  // Get API URL based on current environment
+  const getApiUrl = () => {
+    if (typeof window === 'undefined') return ''; // SSR fallback
+    
+    const isLocalhost = window.location.hostname === 'localhost' || 
+                       window.location.hostname === '127.0.0.1';
+    
+    return isLocalhost 
+      ? 'http://localhost:4000' 
+      : 'https://taskin-panjabi-server.onrender.com';
+  };
 
   useEffect(() => {
     const loadWishlistProducts = async () => {
@@ -44,6 +88,9 @@ export default function WishlistPage() {
           return;
         }
 
+        // Get API URL for current environment
+        const API_URL = getApiUrl();
+        
         // Try to fetch all products first
         const allProductsResponse = await axios.get(`${API_URL}/api/products`);
         let allProducts = [];
@@ -325,7 +372,7 @@ export default function WishlistPage() {
         </p>
         <Link
           href="/product"
-          className="group px-8 py-4 bg-gradient-to-r from-slate-900 to-slate-700 hover:bg-from-slate-950 hover:to-slate-800 text-white hover:text-amber-500 rounded-lg flex items-center gap-3 hover:bg-amber-700 transition-all duration-300 shadow-lg hover:shadow-xl"
+          className="group px-8 py-4 bg-gradient-to-r from-slate-900 to-slate-700 hover:from-slate-950 hover:to-slate-800 text-white hover:text-amber-500 rounded-lg flex items-center gap-3 hover:bg-amber-700 transition-all duration-300 shadow-lg hover:shadow-xl"
         >
           <ArrowLeft className="group-hover:-translate-x-1 transition-transform" size={20} />
           <span className="font-semibold">Browse Products</span>

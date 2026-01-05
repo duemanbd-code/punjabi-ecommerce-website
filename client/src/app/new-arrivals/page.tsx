@@ -25,7 +25,86 @@ import ProductFilters from "@/components/ProductFilters";
 import { Product } from "@/types/product.types";
 import ProductCard from "@/components/ProductCard";
 
-  const API_URL=process.env.NEXT_PUBLIC_API_URL
+// Function to get the correct API URL based on environment
+const getApiBaseUrl = (): string => {
+  // First check for environment variable
+  const envUrl = process.env.NEXT_PUBLIC_API_URL;
+  
+  if (envUrl) {
+    // If env URL is provided, ensure it has the correct protocol
+    if (!envUrl.startsWith('http')) {
+      // For production environments, default to https
+      if (process.env.NODE_ENV === 'production' || 
+          (typeof window !== 'undefined' && window.location.hostname !== 'localhost')) {
+        return `https://${envUrl}`;
+      } else {
+        return `http://${envUrl}`;
+      }
+    }
+    return envUrl;
+  }
+  
+  // If no env variable, detect based on current environment
+  if (typeof window !== 'undefined') {
+    const isLocalhost = window.location.hostname === 'localhost' || 
+                       window.location.hostname === '127.0.0.1';
+    
+    if (isLocalhost) {
+      console.log('🌟 Using local development API: http://localhost:4000');
+      return 'http://localhost:4000';
+    } else {
+      console.log('🚀 Using production API: https://taskin-panjabi-server.onrender.com');
+      return 'https://taskin-panjabi-server.onrender.com';
+    }
+  }
+  
+  // Server-side rendering - use environment or default to local
+  return process.env.NODE_ENV === 'production' 
+    ? 'https://taskin-panjabi-server.onrender.com'
+    : 'http://localhost:4000';
+};
+
+// Get API URL with /api prefix
+const getApiUrl = (): string => {
+  const baseUrl = getApiBaseUrl();
+  return `${baseUrl}/api`;
+};
+
+// Helper function to get full image URL
+const getFullImageUrl = (imagePath: string | undefined): string => {
+  if (!imagePath) {
+    return 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&h=300&fit=crop';
+  }
+  
+  // Already a full URL
+  if (imagePath.startsWith('http') || imagePath.startsWith('data:') || imagePath.startsWith('blob:')) {
+    return imagePath;
+  }
+  
+  // Handle "undefined" in path
+  if (imagePath.includes('undefined')) {
+    console.error('Found "undefined" in image path:', imagePath);
+    return 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&h=300&fit=crop';
+  }
+  
+  // Convert relative path to full URL
+  const baseUrl = getApiBaseUrl();
+  
+  // Remove leading slash if present
+  const cleanPath = imagePath.startsWith('/') ? imagePath.substring(1) : imagePath;
+  
+  // Check if it's a file in uploads folder
+  if (imagePath.includes('uploads') || imagePath.includes('images')) {
+    // If path already contains base URL, return as is
+    if (imagePath.includes(baseUrl)) {
+      return imagePath;
+    }
+    return `${baseUrl}/${cleanPath}`;
+  }
+  
+  // Default to uploads folder
+  return `${baseUrl}/uploads/${cleanPath}`;
+};
 
 // Define Size type
 interface SizeObject {
@@ -60,14 +139,27 @@ const NewArrivalsPage = () => {
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [itemsPerPage] = useState<number>(12);
 
+  // ✅ UPDATED: Use getApiUrl() instead of direct environment variable
+  const API_URL = getApiUrl();
+
   // Fetch all products and filter new arrivals
   useEffect(() => {
     const fetchProducts = async () => {
       try {
         setLoading(true);
         setError(null);
+        
+        console.log('🌟 Fetching new arrivals from:', `${API_URL}/products`);
+        
         const response = await axios.get<{ data: Product[] } | Product[]>(
-          `${API_URL}/api/products`
+          `${API_URL}/products`,
+          {
+            timeout: 15000, // 15 second timeout for production
+            headers: {
+              'Accept': 'application/json',
+              'Cache-Control': 'no-cache'
+            }
+          }
         );
 
         let productData: Product[] = [];
@@ -85,11 +177,18 @@ const NewArrivalsPage = () => {
         const newArrivalsProducts = productData.filter(
           (product) => product.isNew
         );
-        setProducts(newArrivalsProducts);
+        
+        // Process image URLs to ensure they're full URLs
+        const processedProducts = newArrivalsProducts.map((product: any) => ({
+          ...product,
+          imageUrl: getFullImageUrl(product.imageUrl || product.image || product.thumbnail)
+        }));
+        
+        setProducts(processedProducts);
 
         // Extract unique categories from new arrivals
         const uniqueCategories = new Set<string>();
-        newArrivalsProducts.forEach((product) => {
+        processedProducts.forEach((product) => {
           if (product.category) {
             uniqueCategories.add(product.category);
           }
@@ -99,7 +198,7 @@ const NewArrivalsPage = () => {
 
         // Extract unique sizes - CORRECTED VERSION
         const uniqueSizes = new Set<string>();
-        newArrivalsProducts.forEach((product) => {
+        processedProducts.forEach((product) => {
           if (product.sizes && Array.isArray(product.sizes)) {
             product.sizes.forEach((size: any) => {
               if (typeof size === "string") {
@@ -138,11 +237,20 @@ const NewArrivalsPage = () => {
           // Fallback sizes
           setSizes(["S", "M", "L", "XL", "XXL"]);
         }
-      } catch (error) {
-        console.error("Error fetching new arrivals products:", error);
-        setError(
-          "Failed to load new arrivals products. Please try again later."
-        );
+      } catch (error: any) {
+        console.error("❌ Error fetching new arrivals products:", error);
+        
+        if (error.code === 'ECONNABORTED') {
+          setError("Request timeout. Server might be starting up. Please try again in a moment.");
+        } else if (error.response?.status === 404) {
+          setError("Products endpoint not found. Please check the backend server.");
+        } else if (error.response?.status === 500) {
+          setError("Server error. Please try again later.");
+        } else if (error.message === 'Network Error') {
+          setError(`Cannot connect to server. Make sure backend is running at: ${getApiBaseUrl()}`);
+        } else {
+          setError(error.message || "Failed to load new arrivals products. Please try again later.");
+        }
       } finally {
         setLoading(false);
       }
@@ -369,6 +477,14 @@ const NewArrivalsPage = () => {
             <div className="flex justify-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600"></div>
             </div>
+            <p className="text-gray-500 mt-4">
+              Loading from: {getApiBaseUrl()}
+            </p>
+            {window.location.hostname !== 'localhost' && (
+              <p className="text-gray-400 text-sm mt-2">
+                Production backend might take 30-50 seconds to wake up on first request
+              </p>
+            )}
           </div>
         </div>
       </div>
@@ -392,6 +508,9 @@ const NewArrivalsPage = () => {
             <div className="bg-red-50 border border-red-200 rounded-xl p-8 max-w-md mx-auto">
               <p className="text-red-600 font-medium text-lg mb-4">
                 Error: {error}
+              </p>
+              <p className="text-gray-600 text-sm mb-4">
+                Backend URL: {getApiBaseUrl()}
               </p>
               <button
                 onClick={() => window.location.reload()}
@@ -419,10 +538,6 @@ const NewArrivalsPage = () => {
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6">
               Latest <span className="text-amber-400">Collections</span>
             </h1>
-            {/* <p className="text-lg md:text-xl text-gray-200 mb-8">
-              Discover our newest Panjabi collections with fresh designs,
-              exclusive styles.
-            </p> */}
 
             <div className="relative max-w-2xl mx-auto">
               <div className="relative">

@@ -2,8 +2,53 @@
 
 import { getAuthHeaders } from "../utils/auth";
 
-// FIX: Add fallback for API_URL
-const API_URL = `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000"}/api`;
+// Function to get the correct API URL based on environment
+const getApiBaseUrl = (): string => {
+  // First check for environment variable
+  const envUrl = process.env.NEXT_PUBLIC_API_URL;
+  
+  if (envUrl) {
+    // If env URL is provided, ensure it has the correct protocol
+    if (!envUrl.startsWith('http')) {
+      // For production environments, default to https
+      if (process.env.NODE_ENV === 'production' || 
+          (typeof window !== 'undefined' && window.location.hostname !== 'localhost')) {
+        return `https://${envUrl}`;
+      } else {
+        return `http://${envUrl}`;
+      }
+    }
+    return envUrl;
+  }
+  
+  // If no env variable, detect based on current environment
+  if (typeof window !== 'undefined') {
+    const isLocalhost = window.location.hostname === 'localhost' || 
+                       window.location.hostname === '127.0.0.1';
+    
+    if (isLocalhost) {
+      console.log('🌐 Using local development API: http://localhost:4000');
+      return 'http://localhost:4000';
+    } else {
+      console.log('🚀 Using production API: https://taskin-panjabi-server.onrender.com');
+      return 'https://taskin-panjabi-server.onrender.com';
+    }
+  }
+  
+  // Server-side rendering - use environment or default to local
+  return process.env.NODE_ENV === 'production' 
+    ? 'https://taskin-panjabi-server.onrender.com'
+    : 'http://localhost:4000';
+};
+
+// Get API URL with /api prefix
+const getApiUrl = (): string => {
+  const baseUrl = getApiBaseUrl();
+  return `${baseUrl}/api`;
+};
+
+// API URL for use in functions
+const API_URL = getApiUrl();
 
 export const productApi = {
   // Get inventory report

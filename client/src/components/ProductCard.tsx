@@ -56,27 +56,42 @@ interface ProductCardProps {
 
 // ==================== UTILITY FUNCTIONS ====================
 
-// Get API URL with fallback
+// Get API URL with fallback - SMARTER VERSION
 const getApiBaseUrl = (): string => {
+  // Always check environment variable first
   const envUrl = process.env.NEXT_PUBLIC_API_URL;
   
   if (envUrl) {
     // Ensure URL has protocol
     if (!envUrl.startsWith('http')) {
-      console.warn('⚠️ API URL missing protocol, adding https://');
       return `https://${envUrl}`;
     }
     return envUrl;
   }
   
-  // Default for local development
-  console.warn('⚠️ NEXT_PUBLIC_API_URL not set, using default: http://localhost:4000');
+  // If no env variable, check if we're in production by looking at window location
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+    
+    // If we're running on localhost, use local backend
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      return 'http://localhost:4000';
+    }
+    
+    // If we're on any other domain (production), use production backend
+    return 'https://taskin-panjabi-server.onrender.com';
+  }
+  
+  // Default fallback (SSR or unknown)
   return 'http://localhost:4000';
 };
 
-// Image URL helper - Updated for production
-const getImageUrl = (url: string | undefined) => {
+// Image URL helper - UPDATED with better debugging
+const getImageUrl = (url: string | undefined): string => {
+  console.log("🖼️ getImageUrl called with:", url);
+  
   if (!url || url.trim() === "") {
+    console.log("🖼️ No URL provided, returning placeholder");
     return "https://images.unsplash.com/photo-1560343090-f0409e92791a?w=400&h=400&fit=crop";
   }
 
@@ -86,23 +101,46 @@ const getImageUrl = (url: string | undefined) => {
     url.startsWith("https://") ||
     url.startsWith("data:")
   ) {
+    console.log("🖼️ Already full URL:", url);
     return url;
+  }
+
+  // Handle "undefined" in path
+  if (url.includes('undefined')) {
+    console.error('🖼️ Found "undefined" in image path:', url);
+    return "https://images.unsplash.com/photo-1560343090-f0409e92791a?w=400&h=400&fit=crop";
   }
 
   // Get base URL from environment
   const baseUrl = getApiBaseUrl();
+  console.log("🖼️ Using base URL:", baseUrl);
   
-  // Handle different URL formats
-  if (url.startsWith("/uploads")) {
-    return `${baseUrl}${url}`;
+  // Clean up the URL
+  let cleanUrl = url;
+  
+  // Remove leading slash if present
+  if (cleanUrl.startsWith('/')) {
+    cleanUrl = cleanUrl.substring(1);
   }
-
-  if (url.startsWith("/")) {
-    return `${baseUrl}${url}`;
+  
+  // Check if it's already an absolute path with /uploads
+  if (cleanUrl.includes('/uploads/')) {
+    const finalUrl = `${baseUrl}/${cleanUrl}`;
+    console.log("🖼️ URL has /uploads/, final URL:", finalUrl);
+    return finalUrl;
   }
-
-  // If it's just a filename
-  return `${baseUrl}/uploads/${url}`;
+  
+  // Check if it starts with uploads
+  if (cleanUrl.startsWith('uploads/')) {
+    const finalUrl = `${baseUrl}/${cleanUrl}`;
+    console.log("🖼️ URL starts with uploads/, final URL:", finalUrl);
+    return finalUrl;
+  }
+  
+  // If it's just a filename, assume it's in uploads folder
+  const finalUrl = `${baseUrl}/uploads/${cleanUrl}`;
+  console.log("🖼️ Assuming filename in uploads/, final URL:", finalUrl);
+  return finalUrl;
 };
 
 // ==================== MAIN COMPONENT ====================
@@ -124,6 +162,14 @@ function ProductCard({
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
 
   const isWishlisted = isInWishlist(product._id);
+
+  // Debug log
+  console.log("🛒 ProductCard rendering with:", {
+    productId: product._id,
+    productTitle: product.title,
+    imageUrl: product.imageUrl,
+    computedImageUrl: getImageUrl(product.imageUrl)
+  });
 
   // ✅ FIXED: Calculate correct price
   const calculatePriceData = useCallback(() => {
@@ -288,6 +334,7 @@ function ProductCard({
 
   // Handle image error
   const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    console.error("🖼️ Image failed to load:", e.currentTarget.src);
     e.currentTarget.src =
       "https://images.unsplash.com/photo-1560343090-f0409e92791a?w=400&h=400&fit=crop";
     e.currentTarget.onerror = null;
@@ -349,6 +396,7 @@ function ProductCard({
                 }`}
                 loading="lazy"
                 onError={handleImageError}
+                onLoad={() => console.log("🖼️ Image loaded successfully")}
               />
 
               {/* Animated overlay on hover */}

@@ -52,22 +52,54 @@ interface ProductForm {
 
 // ==================== UTILITY FUNCTIONS ====================
 
-// Get API URL with fallback
+// Get API URL with fallback - IMPROVED VERSION
 const getApiBaseUrl = (): string => {
+  // Check environment variable first
   const envUrl = process.env.NEXT_PUBLIC_API_URL;
   
   if (envUrl) {
     // Ensure URL has protocol
     if (!envUrl.startsWith('http')) {
-      console.warn('⚠️ API URL missing protocol, adding https://');
-      return `https://${envUrl}`;
+      // Determine protocol based on environment
+      const isProduction = typeof window !== 'undefined' ? 
+        !window.location.hostname.includes('localhost') : 
+        process.env.NODE_ENV === 'production';
+      
+      if (isProduction) {
+        console.log('🚀 Production mode detected, using HTTPS');
+        return `https://${envUrl}`;
+      } else {
+        console.log('🌐 Development mode detected, using HTTP');
+        return `http://${envUrl}`;
+      }
     }
     return envUrl;
   }
   
-  // Default for local development
+  // No environment variable, detect based on current location
+  if (typeof window !== 'undefined') {
+    const isLocalhost = window.location.hostname === 'localhost' || 
+                        window.location.hostname === '127.0.0.1' ||
+                        window.location.hostname === '';
+    
+    if (isLocalhost) {
+      console.log('🌐 Local development: Using http://localhost:4000');
+      return 'http://localhost:4000';
+    } else {
+      console.log('🚀 Production: Using https://taskin-panjabi-server.onrender.com');
+      return 'https://taskin-panjabi-server.onrender.com';
+    }
+  }
+  
+  // Fallback for server-side rendering
   console.warn('⚠️ NEXT_PUBLIC_API_URL not set, using default: http://localhost:4000');
   return 'http://localhost:4000';
+};
+
+// Get API URL for requests
+const getApiUrl = (): string => {
+  const baseUrl = getApiBaseUrl();
+  return `${baseUrl}/api`;
 };
 
 // Convert relative image path to full URL
@@ -102,9 +134,6 @@ const getFullImageUrl = (imagePath: string | undefined): string => {
   // If it's just a filename, assume it's in uploads folder
   return `${baseUrl}/uploads/${cleanPath}`;
 };
-
-// Get API URL for requests
-const API_BASE_URL = getApiBaseUrl();
 
 // ==================== MAIN COMPONENT ====================
 
@@ -172,7 +201,11 @@ export default function ProductFormPage({ productId }: { productId?: string }) {
     const fetchProduct = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`${API_BASE_URL}/api/products/${productId}`, {
+        const apiUrl = getApiUrl();
+        console.log("🌐 Fetching product from:", `${apiUrl}/products/${productId}`);
+        console.log("📱 Current environment:", typeof window !== 'undefined' ? window.location.hostname : 'server-side');
+
+        const response = await fetch(`${apiUrl}/products/${productId}`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
@@ -185,7 +218,7 @@ export default function ProductFormPage({ productId }: { productId?: string }) {
 
         const data = await response.json();
         const productData = data.data || data;
-        console.log("Fetched product data:", productData);
+        console.log("✅ Fetched product data:", productData);
 
         // Calculate prices
         const normalPrice = productData.normalPrice || 0;
@@ -253,9 +286,10 @@ export default function ProductFormPage({ productId }: { productId?: string }) {
         // Set main image preview using getFullImageUrl
         if (productData.imageUrl) {
           const previewUrl = getFullImageUrl(productData.imageUrl);
-          console.log("Setting main image preview:", {
+          console.log("🖼️ Setting main image preview:", {
             original: productData.imageUrl,
-            preview: previewUrl
+            preview: previewUrl,
+            baseUrl: getApiBaseUrl()
           });
           setImagePreview(previewUrl);
         }
@@ -266,7 +300,7 @@ export default function ProductFormPage({ productId }: { productId?: string }) {
             .filter((img: string) => img && img !== "undefined")
             .map((img: string) => getFullImageUrl(img));
           
-          console.log("Setting additional images previews:", {
+          console.log("🖼️ Setting additional images previews:", {
             original: productData.additionalImages,
             previews: previews
           });
@@ -275,12 +309,16 @@ export default function ProductFormPage({ productId }: { productId?: string }) {
           setAdditionalPreviews(previews);
         }
       } catch (err: any) {
-        console.error("Fetch error:", err);
+        console.error("❌ Fetch error:", err);
         if (err.message.includes("401")) {
           toast.error("Session expired. Please login again.");
           localStorage.removeItem("admin-token");
           localStorage.removeItem("admin-user");
           router.push("/login");
+        } else if (err.message.includes("NetworkError") || err.message.includes("Failed to fetch")) {
+          toast.error("Cannot connect to server. Check your internet connection.");
+          console.log("🌐 Current API URL:", getApiUrl());
+          console.log("🔧 Backend URL:", getApiBaseUrl());
         } else {
           toast.error(err.message || "Failed to fetch product");
         }
@@ -482,7 +520,7 @@ export default function ProductFormPage({ productId }: { productId?: string }) {
       // Append main image
       if (form.image) {
         console.log(
-          "Appending main image:",
+          "📤 Appending main image:",
           form.image.name,
           form.image.type,
           form.image.size
@@ -504,17 +542,21 @@ export default function ProductFormPage({ productId }: { productId?: string }) {
         formData.append("keepExistingAdditionalImages", "true");
       }
 
-      console.log("Submitting product...");
-      console.log("Form data entries:");
+      console.log("🚀 Submitting product...");
+      console.log("📦 Form data entries:");
       for (let pair of (formData as any).entries()) {
         console.log(pair[0], pair[1]);
       }
 
+      const apiUrl = getApiUrl();
       const url = productId
-        ? `${API_BASE_URL}/api/products/${productId}`
-        : `${API_BASE_URL}/api/products`;
+        ? `${apiUrl}/products/${productId}`
+        : `${apiUrl}/products`;
 
       const method = productId ? "PUT" : "POST";
+
+      console.log(`🌐 Sending ${method} request to: ${url}`);
+      console.log(`🔗 Backend base URL: ${getApiBaseUrl()}`);
 
       const response = await fetch(url, {
         method,
@@ -532,14 +574,14 @@ export default function ProductFormPage({ productId }: { productId?: string }) {
       }
 
       const data = await response.json();
-      console.log(`${productId ? "Update" : "Create"} response:`, data);
+      console.log(`✅ ${productId ? "Update" : "Create"} response:`, data);
 
       toast.success(
         `Product ${productId ? "updated" : "created"} successfully!`
       );
       router.push("/products");
     } catch (err: any) {
-      console.error("Submit error:", err);
+      console.error("❌ Submit error:", err);
 
       if (err.message.includes("401") || err.message.includes("Unauthorized")) {
         toast.error("Session expired. Please login again.");
@@ -551,6 +593,9 @@ export default function ProductFormPage({ productId }: { productId?: string }) {
         err.message.includes("Failed to fetch")
       ) {
         toast.error("Cannot connect to server. Make sure backend is running.");
+        console.log("🌐 Current API URL:", getApiUrl());
+        console.log("🔧 Backend base URL:", getApiBaseUrl());
+        console.log("📱 Environment:", process.env.NODE_ENV);
       } else {
         toast.error(err.message || "Failed to save product");
       }
@@ -746,6 +791,9 @@ export default function ProductFormPage({ productId }: { productId?: string }) {
               <p className="text-slate-600 font-medium">
                 Loading product data...
               </p>
+              <p className="text-slate-400 text-sm">
+                Connecting to: {getApiBaseUrl()}
+              </p>
             </div>
           </div>
         </div>
@@ -776,6 +824,9 @@ export default function ProductFormPage({ productId }: { productId?: string }) {
                 {productId
                   ? "Update existing product details"
                   : "Add a new product to your catalog"}
+              </p>
+              <p className="text-slate-400 text-xs mt-1">
+                Backend: {getApiBaseUrl()}
               </p>
             </div>
           </div>

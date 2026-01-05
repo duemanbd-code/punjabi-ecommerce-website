@@ -23,6 +23,51 @@ import ProductFilters from "@/components/ProductFilters";
 import { Product } from "@/types/product.types";
 import ProductCard from "@/components/ProductCard";
 
+// Function to get the correct API URL based on environment
+const getApiBaseUrl = (): string => {
+  // First check for environment variable
+  const envUrl = process.env.NEXT_PUBLIC_API_URL;
+  
+  if (envUrl) {
+    // If env URL is provided, ensure it has the correct protocol
+    if (!envUrl.startsWith('http')) {
+      // For production environments, default to https
+      if (process.env.NODE_ENV === 'production' || 
+          (typeof window !== 'undefined' && window.location.hostname !== 'localhost')) {
+        return `https://${envUrl}`;
+      } else {
+        return `http://${envUrl}`;
+      }
+    }
+    return envUrl;
+  }
+  
+  // If no env variable, detect based on current environment
+  if (typeof window !== 'undefined') {
+    const isLocalhost = window.location.hostname === 'localhost' || 
+                       window.location.hostname === '127.0.0.1';
+    
+    if (isLocalhost) {
+      console.log('🌐 Using local development API: http://localhost:4000');
+      return 'http://localhost:4000';
+    } else {
+      console.log('🚀 Using production API: https://taskin-panjabi-server.onrender.com');
+      return 'https://taskin-panjabi-server.onrender.com';
+    }
+  }
+  
+  // Server-side rendering - use environment or default to local
+  return process.env.NODE_ENV === 'production' 
+    ? 'https://taskin-panjabi-server.onrender.com'
+    : 'http://localhost:4000';
+};
+
+// Get API URL with /api prefix
+const getApiUrl = (): string => {
+  const baseUrl = getApiBaseUrl();
+  return `${baseUrl}/api`;
+};
+
 // Define Size type if needed
 interface SizeObject {
   size: string;
@@ -56,7 +101,7 @@ const BestSellingPage = () => {
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [itemsPerPage] = useState<number>(12);
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL;
+  const API_URL = getApiUrl();
 
   // Fetch all products and filter best selling
   useEffect(() => {
@@ -64,8 +109,17 @@ const BestSellingPage = () => {
       try {
         setLoading(true);
         setError(null);
+        console.log('🌐 Fetching best selling products from:', `${API_URL}/products`);
+        
         const response = await axios.get<{ data: Product[] } | Product[]>(
-          `${API_URL}/api/products`
+          `${API_URL}/products`,
+          {
+            timeout: 15000, // 15 second timeout for production
+            headers: {
+              'Accept': 'application/json',
+              'Cache-Control': 'no-cache'
+            }
+          }
         );
 
         let productData: Product[] = [];
@@ -83,11 +137,18 @@ const BestSellingPage = () => {
         const bestSellingProducts = productData.filter(
           (product) => product.isBestSelling
         );
-        setProducts(bestSellingProducts);
+        
+        // Process image URLs to ensure they're full URLs
+        const processedProducts = bestSellingProducts.map((product: any) => ({
+          ...product,
+          imageUrl: getFullImageUrl(product.imageUrl || product.image || product.thumbnail)
+        }));
+        
+        setProducts(processedProducts);
 
         // Extract unique categories from best selling products
         const uniqueCategories = new Set<string>();
-        bestSellingProducts.forEach((product) => {
+        processedProducts.forEach((product) => {
           if (product.category) {
             uniqueCategories.add(product.category);
           }
@@ -97,7 +158,7 @@ const BestSellingPage = () => {
 
         // Extract unique sizes - handle both string array and object array
         const uniqueSizes = new Set<string>();
-        bestSellingProducts.forEach((product) => {
+        processedProducts.forEach((product) => {
           if (
             product.sizes &&
             Array.isArray(product.sizes) &&
@@ -142,11 +203,20 @@ const BestSellingPage = () => {
 
           setSizes(sortedSizes);
         }
-      } catch (error) {
-        console.error("Error fetching best selling products:", error);
-        setError(
-          "Failed to load best selling products. Please try again later."
-        );
+      } catch (error: any) {
+        console.error("❌ Error fetching best selling products:", error);
+        
+        if (error.code === 'ECONNABORTED') {
+          setError("Request timeout. Server might be starting up. Please try again in a moment.");
+        } else if (error.response?.status === 404) {
+          setError("Products endpoint not found. Please check the backend server.");
+        } else if (error.response?.status === 500) {
+          setError("Server error. Please try again later.");
+        } else if (error.message === 'Network Error') {
+          setError(`Cannot connect to server. Make sure backend is running at: ${getApiBaseUrl()}`);
+        } else {
+          setError(error.message || "Failed to load best selling products. Please try again later.");
+        }
       } finally {
         setLoading(false);
       }
@@ -155,26 +225,63 @@ const BestSellingPage = () => {
     fetchProducts();
   }, []);
 
-  // Check if product has selected size (handles both string and object arrays)
-const hasSelectedSize = useCallback(
-  (product: Product, selectedSizes: string[]): boolean => {
-    if (selectedSizes.length === 0) return true;
-
-    if (!product.sizes || !Array.isArray(product.sizes)) return false;
-
-    // Check each size item individually
-    return product.sizes.some((sizeItem) => {
-      if (typeof sizeItem === "string") {
-        return selectedSizes.includes(sizeItem);
-      } else if (typeof sizeItem === "object" && sizeItem !== null && "size" in sizeItem) {
-        const sizeObj = sizeItem as SizeObject;
-        return sizeObj.size && selectedSizes.includes(sizeObj.size);
+  // Helper function to get full image URL
+  const getFullImageUrl = (imagePath: string | undefined): string => {
+    if (!imagePath) {
+      return 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&h=300&fit=crop';
+    }
+    
+    // Already a full URL
+    if (imagePath.startsWith('http') || imagePath.startsWith('data:') || imagePath.startsWith('blob:')) {
+      return imagePath;
+    }
+    
+    // Handle "undefined" in path
+    if (imagePath.includes('undefined')) {
+      console.error('Found "undefined" in image path:', imagePath);
+      return 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&h=300&fit=crop';
+    }
+    
+    // Convert relative path to full URL
+    const baseUrl = getApiBaseUrl();
+    
+    // Remove leading slash if present
+    const cleanPath = imagePath.startsWith('/') ? imagePath.substring(1) : imagePath;
+    
+    // Check if it's a file in uploads folder
+    if (imagePath.includes('uploads') || imagePath.includes('images')) {
+      // If path already contains base URL, return as is
+      if (imagePath.includes(baseUrl)) {
+        return imagePath;
       }
-      return false;
-    });
-  },
-  []
-);
+      return `${baseUrl}/${cleanPath}`;
+    }
+    
+    // Default to uploads folder
+    return `${baseUrl}/uploads/${cleanPath}`;
+  };
+
+  // Check if product has selected size (handles both string and object arrays)
+  const hasSelectedSize = useCallback(
+    (product: Product, selectedSizes: string[]): boolean => {
+      if (selectedSizes.length === 0) return true;
+
+      if (!product.sizes || !Array.isArray(product.sizes)) return false;
+
+      // Check each size item individually
+      return product.sizes.some((sizeItem) => {
+        if (typeof sizeItem === "string") {
+          return selectedSizes.includes(sizeItem);
+        } else if (typeof sizeItem === "object" && sizeItem !== null && "size" in sizeItem) {
+          const sizeObj = sizeItem as SizeObject;
+          return sizeObj.size && selectedSizes.includes(sizeObj.size);
+        }
+        return false;
+      });
+    },
+    []
+  );
+
   // Apply filters
   useEffect(() => {
     let result = [...products];
@@ -383,6 +490,14 @@ const hasSelectedSize = useCallback(
             <div className="flex justify-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600"></div>
             </div>
+            <p className="text-gray-500 mt-4">
+              Loading from: {getApiBaseUrl()}
+            </p>
+            {window.location.hostname !== 'localhost' && (
+              <p className="text-gray-400 text-sm mt-2">
+                Production backend might take 30-50 seconds to wake up on first request
+              </p>
+            )}
           </div>
         </div>
       </div>
@@ -406,6 +521,9 @@ const hasSelectedSize = useCallback(
             <div className="bg-red-50 border border-red-200 rounded-xl p-8 max-w-md mx-auto">
               <p className="text-red-600 font-medium text-lg mb-4">
                 Error: {error}
+              </p>
+              <p className="text-gray-600 text-sm mb-4">
+                Backend URL: {getApiBaseUrl()}
               </p>
               <button
                 onClick={() => window.location.reload()}
@@ -433,10 +551,6 @@ const hasSelectedSize = useCallback(
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6">
               Best <span className="text-amber-400">Collections</span>
             </h1>
-            {/* <p className="text-lg md:text-xl text-gray-200 mb-8">
-              Discover our most popular Panjabi collections loved by thousands
-              of customers.
-            </p> */}
 
             <div className="relative max-w-2xl mx-auto">
               <div className="relative">

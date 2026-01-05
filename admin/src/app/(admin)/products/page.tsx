@@ -32,28 +32,43 @@ interface Product {
 
 // ==================== UTILITY FUNCTIONS ====================
 
-// Get API URL with fallback
+// Get API URL with proper protocol handling for both local and production
 const getApiBaseUrl = (): string => {
+  // First check for environment variable
   const envUrl = process.env.NEXT_PUBLIC_API_URL;
   
   if (envUrl) {
-    // Ensure URL has protocol
+    // If env URL is provided, ensure it has the correct protocol
     if (!envUrl.startsWith('http')) {
-      console.warn('⚠️ API URL missing protocol, adding https://');
-      return `https://${envUrl}`;
+      // For production environments, default to https
+      if (process.env.NODE_ENV === 'production' || window.location.hostname !== 'localhost') {
+        console.log('🔄 Using HTTPS for production');
+        return `https://${envUrl}`;
+      } else {
+        console.log('🔄 Using HTTP for development');
+        return `http://${envUrl}`;
+      }
     }
     return envUrl;
   }
   
-  // Default for local development
-  console.warn('⚠️ NEXT_PUBLIC_API_URL not set, using default: http://localhost:4000');
-  return 'http://localhost:4000';
+  // If no env variable, detect based on current environment
+  const isLocalhost = window.location.hostname === 'localhost' || 
+                      window.location.hostname === '127.0.0.1' ||
+                      window.location.hostname === '';
+  
+  if (isLocalhost) {
+    console.log('🌐 Development mode: Using localhost:4000');
+    return 'http://localhost:4000';
+  } else {
+    console.log('🚀 Production mode: Using render.com');
+    return 'https://taskin-panjabi-server.onrender.com';
+  }
 };
 
 // Convert relative image path to full URL
 const getFullImageUrl = (imagePath: string | undefined): string => {
   if (!imagePath) {
-    // Return a placeholder image
     return 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&h=300&fit=crop';
   }
   
@@ -71,21 +86,27 @@ const getFullImageUrl = (imagePath: string | undefined): string => {
   // Convert relative path to full URL
   const baseUrl = getApiBaseUrl();
   
-  // Remove leading slash if present to avoid double slashes
+  // Remove leading slash if present
   const cleanPath = imagePath.startsWith('/') ? imagePath.substring(1) : imagePath;
   
-  // Handle different path formats
-  if (imagePath.startsWith('uploads/') || imagePath.includes('/uploads/')) {
+  // Check if it's a file in uploads folder
+  if (imagePath.includes('uploads') || imagePath.includes('images')) {
+    // If path already contains base URL, return as is
+    if (imagePath.includes(baseUrl)) {
+      return imagePath;
+    }
     return `${baseUrl}/${cleanPath}`;
   }
   
-  // If it's just a filename, assume it's in uploads folder
+  // Default to uploads folder
   return `${baseUrl}/uploads/${cleanPath}`;
 };
 
-// Get API URL for requests
-const API_BASE_URL = getApiBaseUrl();
-const API_URL = `${API_BASE_URL}/api`;
+// Get API URL for requests (call this function when needed)
+const getApiUrl = (): string => {
+  const baseUrl = getApiBaseUrl();
+  return `${baseUrl}/api`;
+};
 
 // ==================== MAIN COMPONENT ====================
 
@@ -120,7 +141,9 @@ export default function AdminProductsPage() {
   const fetchProducts = async () => {
     try {
       setLoading(true);
-      console.log("Fetching products from:", `${API_URL}/products`);
+      const apiUrl = getApiUrl();
+      console.log("🌐 Fetching products from:", `${apiUrl}/products`);
+      console.log("🌍 Current hostname:", window.location.hostname);
 
       const token = getAuthToken();
       if (!token) {
@@ -128,11 +151,14 @@ export default function AdminProductsPage() {
         return;
       }
 
-      const res = await fetch(`${API_URL}/products`, {
+      const res = await fetch(`${apiUrl}/products`, {
         headers: {
           'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        // Add timeout for production
+        signal: AbortSignal.timeout(10000)
       });
 
       if (!res.ok) {
@@ -143,7 +169,7 @@ export default function AdminProductsPage() {
       }
 
       const data = await res.json();
-      console.log("Products response:", data);
+      console.log("✅ Products response:", data);
 
       const productsData = data.data || data || [];
 
@@ -152,14 +178,14 @@ export default function AdminProductsPage() {
         title: product.title || "No Title",
         description: product.description || "",
         category: product.category || "uncategorized",
-        imageUrl: getFullImageUrl(product.imageUrl),
-        normalPrice: product.normalPrice || 0,
-        salePrice: product.salePrice || undefined,
-        originalPrice: product.originalPrice || product.normalPrice || 0,
+        imageUrl: getFullImageUrl(product.imageUrl || product.image || product.thumbnail),
+        normalPrice: product.normalPrice || product.price || 0,
+        salePrice: product.salePrice || product.discountedPrice || undefined,
+        originalPrice: product.originalPrice || product.normalPrice || product.price || 0,
         isBestSelling: product.isBestSelling || false,
         isNew: product.isNew || false,
         featured: product.featured || false,
-        stockQuantity: product.stockQuantity || product.stock || 0,
+        stockQuantity: product.stockQuantity || product.stock || product.quantity || 0,
         salesCount: product.salesCount || 0,
         rating: product.rating || 0,
         status: product.status || "active",
@@ -167,23 +193,27 @@ export default function AdminProductsPage() {
         createdAt: product.createdAt,
       }));
 
-      console.log(`Loaded ${formattedProducts.length} products`);
+      console.log(`✅ Loaded ${formattedProducts.length} products`);
       setProducts(formattedProducts);
       
     } catch (err: any) {
-      console.error("Error fetching products:", err);
+      console.error("❌ Error fetching products:", err);
       
-      if (err.message.includes("Unauthorized") || err.message.includes("401")) {
+      if (err.name === 'TimeoutError' || err.message.includes('timeout')) {
+        toast.error("Request timeout. Server might be slow or offline.");
+      } else if (err.message.includes("Unauthorized") || err.message.includes("401")) {
         toast.error("Session expired. Please login again.");
         localStorage.removeItem("admin-token");
         localStorage.removeItem("admin-user");
         router.push("/login");
       } else if (err.message.includes("NetworkError") || err.message.includes("Failed to fetch")) {
-        toast.error("Cannot connect to server. Make sure backend is running.");
+        toast.error("Cannot connect to server. Check your internet connection or ensure backend is running.");
+        console.log("🌐 Current API URL:", getApiUrl());
       } else {
         toast.error(err.message || "Failed to load products");
       }
       
+      // Set empty products on error
       setProducts([]);
     } finally {
       setLoading(false);
@@ -206,9 +236,10 @@ export default function AdminProductsPage() {
     }
 
     try {
-      console.log("Deleting product:", id);
+      console.log("🗑️ Deleting product:", id);
+      const apiUrl = getApiUrl();
       
-      const response = await fetch(`${API_URL}/products/${id}`, {
+      const response = await fetch(`${apiUrl}/products/${id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -222,13 +253,13 @@ export default function AdminProductsPage() {
       }
 
       const data = await response.json();
-      console.log("Delete response:", data);
+      console.log("✅ Delete response:", data);
       
       setProducts((prev) => prev.filter((p) => p._id !== id));
       toast.success("Product deleted successfully!");
       
     } catch (err: any) {
-      console.error("Delete error:", err);
+      console.error("❌ Delete error:", err);
       
       if (err.message.includes("401") || err.message.includes("Unauthorized")) {
         toast.error("Session expired. Please login again.");
@@ -272,8 +303,9 @@ export default function AdminProductsPage() {
       }
 
       const newFeaturedStatus = !product.featured;
+      const apiUrl = getApiUrl();
 
-      const response = await fetch(`${API_URL}/products/${id}`, {
+      const response = await fetch(`${apiUrl}/products/${id}`, {
         method: 'PATCH',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -304,7 +336,7 @@ export default function AdminProductsPage() {
   };
 
   const handleRefresh = () => {
-    console.log("Refreshing products...");
+    console.log("🔄 Refreshing products...");
     setRefreshing(true);
     fetchProducts();
   };
@@ -317,6 +349,7 @@ export default function AdminProductsPage() {
             <div className="text-center">
               <div className="w-10 h-10 sm:w-12 sm:h-12 border-4 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto mb-3 sm:mb-4"></div>
               <p className="text-gray-600 text-sm sm:text-base">Loading products...</p>
+              <p className="text-gray-400 text-xs mt-2">Connecting to: {getApiBaseUrl()}</p>
             </div>
           </main>
         </div>
@@ -336,6 +369,9 @@ export default function AdminProductsPage() {
               </h1>
               <p className="text-gray-600 mt-1 text-sm sm:text-base">
                 Manage all your products in one place
+              </p>
+              <p className="text-gray-400 text-xs mt-1">
+                Backend: {getApiBaseUrl()}
               </p>
             </div>
             <div className="flex gap-2 w-full sm:w-auto">
@@ -449,7 +485,10 @@ export default function AdminProductsPage() {
                 <Package className="w-full h-full" />
               </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">No Products Found</h3>
-              <p className="text-gray-600 mb-6">Get started by adding your first product</p>
+              <p className="text-gray-600 mb-2">Get started by adding your first product</p>
+              <p className="text-gray-400 text-sm mb-6">
+                Backend: {getApiBaseUrl()}
+              </p>
               <button
                 onClick={() => router.push("/products/add")}
                 className="px-6 py-3 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-lg hover:from-amber-600 hover:to-amber-700 font-medium shadow-sm"
@@ -478,32 +517,6 @@ export default function AdminProductsPage() {
           </button>
         )}
       </div>
-
-      {/* Global Responsive Styles */}
-      <style jsx global>{`
-        /* Custom scrollbar for better mobile experience */
-        @media (max-width: 768px) {
-          ::-webkit-scrollbar {
-            width: 4px;
-            height: 4px;
-          }
-          ::-webkit-scrollbar-track {
-            background: #f1f1f1;
-          }
-          ::-webkit-scrollbar-thumb {
-            background: #d1d5db;
-            border-radius: 2px;
-          }
-        }
-        
-        /* Better touch targets for mobile */
-        @media (max-width: 640px) {
-          button, a {
-            min-height: 44px;
-            min-width: 44px;
-          }
-        }
-      `}</style>
     </div>
   );
 }

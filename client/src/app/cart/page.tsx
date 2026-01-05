@@ -35,6 +35,87 @@ import { useCart, CartItem } from "@/context/CartContext";
 import { toast } from "react-hot-toast";
 import CODCheckoutModal from "./CODCheckoutModal";
 
+// Function to get the correct API URL based on environment
+const getApiBaseUrl = (): string => {
+  // First check for environment variable
+  const envUrl = process.env.NEXT_PUBLIC_API_URL;
+  
+  if (envUrl) {
+    // If env URL is provided, ensure it has the correct protocol
+    if (!envUrl.startsWith('http')) {
+      // For production environments, default to https
+      if (process.env.NODE_ENV === 'production' || 
+          (typeof window !== 'undefined' && window.location.hostname !== 'localhost')) {
+        return `https://${envUrl}`;
+      } else {
+        return `http://${envUrl}`;
+      }
+    }
+    return envUrl;
+  }
+  
+  // If no env variable, detect based on current environment
+  if (typeof window !== 'undefined') {
+    const isLocalhost = window.location.hostname === 'localhost' || 
+                       window.location.hostname === '127.0.0.1';
+    
+    if (isLocalhost) {
+      console.log('🛒 Using local development API: http://localhost:4000');
+      return 'http://localhost:4000';
+    } else {
+      console.log('🚀 Using production API: https://taskin-panjabi-server.onrender.com');
+      return 'https://taskin-panjabi-server.onrender.com';
+    }
+  }
+  
+  // Server-side rendering - use environment or default to local
+  return process.env.NODE_ENV === 'production' 
+    ? 'https://taskin-panjabi-server.onrender.com'
+    : 'http://localhost:4000';
+};
+
+// Get API URL with /api prefix
+const getApiUrl = (): string => {
+  const baseUrl = getApiBaseUrl();
+  return `${baseUrl}/api`;
+};
+
+// Helper function to get full image URL
+const getFullImageUrl = (imagePath: string | undefined): string => {
+  if (!imagePath) {
+    return 'https://images.unsplash.com/photo-1560343090-f0409e92791a?w=400&h=400&fit=crop';
+  }
+  
+  // Already a full URL
+  if (imagePath.startsWith('http') || imagePath.startsWith('data:') || imagePath.startsWith('blob:')) {
+    return imagePath;
+  }
+  
+  // Handle "undefined" in path
+  if (imagePath.includes('undefined')) {
+    console.error('Found "undefined" in image path:', imagePath);
+    return 'https://images.unsplash.com/photo-1560343090-f0409e92791a?w=400&h=400&fit=crop';
+  }
+  
+  // Convert relative path to full URL
+  const baseUrl = getApiBaseUrl();
+  
+  // Remove leading slash if present
+  const cleanPath = imagePath.startsWith('/') ? imagePath.substring(1) : imagePath;
+  
+  // Check if it's a file in uploads folder
+  if (imagePath.includes('uploads') || imagePath.includes('images')) {
+    // If path already contains base URL, return as is
+    if (imagePath.includes(baseUrl)) {
+      return imagePath;
+    }
+    return `${baseUrl}/${cleanPath}`;
+  }
+  
+  // Default to uploads folder
+  return `${baseUrl}/uploads/${cleanPath}`;
+};
+
 export default function CartPage() {
   const router = useRouter();
   const {
@@ -70,8 +151,8 @@ export default function CartPage() {
   const [orderNumber, setOrderNumber] = useState("");
   const [estimatedDelivery, setEstimatedDelivery] = useState("");
 
-  // ✅ FIXED: Properly define API_URL with fallback
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+  // ✅ UPDATED: Get API URL using the function
+  const API_URL = getApiUrl();
 
   // Form validation errors
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -166,7 +247,7 @@ export default function CartPage() {
     return Object.keys(newErrors).length === 0;
   };
 
-  // ✅ FIXED: Place order function with proper API_URL
+  // ✅ UPDATED: Place order function with proper API_URL
   const placeOrder = async () => {
     if (!validateForm()) return;
 
@@ -180,7 +261,7 @@ export default function CartPage() {
         price: item.offerPrice || item.salePrice || item.price,
         normalPrice: item.normalPrice || item.price,
         originalPrice: item.originalPrice,
-        image: item.image,
+        image: getFullImageUrl(item.image),
         quantity: item.quantity,
         size: item.size || "M",
         color: item.color || undefined,
@@ -203,12 +284,10 @@ export default function CartPage() {
         paymentStatus: "pending",
       };
 
-      console.log('Sending order data:', orderData);
-      console.log('API_URL:', API_URL);
-      console.log('Fetch URL:', `${API_URL}/api/orders`);
+      console.log('🛒 Sending order data to:', `${API_URL}/orders`);
+      console.log('📦 Backend URL:', getApiBaseUrl());
 
-      // ✅ FIXED: Use backticks for template literal
-      const response = await fetch(`${API_URL}/api/orders`, {
+      const response = await fetch(`${API_URL}/orders`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -216,18 +295,25 @@ export default function CartPage() {
         body: JSON.stringify(orderData),
       });
 
-      console.log('Response status:', response.status);
+      console.log('📡 Response status:', response.status);
       
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('Server error response:', errorText);
-        throw new Error(`HTTP ${response.status}: ${errorText}`);
+        console.error('❌ Server error response:', errorText);
+        
+        if (response.status === 404) {
+          throw new Error(`Orders endpoint not found at ${API_URL}/orders. Make sure backend is running.`);
+        } else if (response.status === 500) {
+          throw new Error("Server error. Please try again later.");
+        } else {
+          throw new Error(`HTTP ${response.status}: ${errorText}`);
+        }
       }
 
       const data = await response.json();
-      console.log('Server response:', data);
+      console.log('✅ Server response:', data);
 
-      if (data.success) {
+      if (data.success || data._id) {
         // Clear cart
         clearCart();
         
@@ -240,17 +326,25 @@ export default function CartPage() {
           router.push(`/order-confirmation/${data.data._id}`);
         } else if (data.order && data.order._id) {
           router.push(`/order-confirmation/${data.order._id}`);
+        } else if (data._id) {
+          router.push(`/order-confirmation/${data._id}`);
         } else if (data.orderId) {
           router.push(`/order-confirmation/${data.orderId}`);
+        } else {
+          // Fallback: just show success modal
+          toast.success("Order placed successfully! We'll contact you soon.");
         }
-        
-        toast.success("Order placed successfully!");
       } else {
         toast.error(data.message || "Failed to place order");
       }
     } catch (error: any) {
-      console.error("Error placing order:", error);
-      toast.error(error.message || "Failed to place order. Please try again.");
+      console.error("❌ Error placing order:", error);
+      
+      if (error.message.includes('NetworkError') || error.message.includes('Failed to fetch')) {
+        toast.error(`Cannot connect to server at ${getApiBaseUrl()}. Please check if backend is running.`);
+      } else {
+        toast.error(error.message || "Failed to place order. Please try again.");
+      }
     } finally {
       setIsPlacingOrder(false);
     }
@@ -600,7 +694,7 @@ export default function CartPage() {
                     <div className="relative">
                       <div className="w-32 h-32 rounded-xl overflow-hidden border border-slate-100">
                         <img
-                          src={item.image}
+                          src={getFullImageUrl(item.image)}
                           alt={item.title}
                           className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
                           onError={(e) => {

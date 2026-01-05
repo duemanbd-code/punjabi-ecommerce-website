@@ -14,7 +14,86 @@ import {
   Award, Zap, Percent
 } from "lucide-react";
 
-  const API_URL=process.env.NEXT_PUBLIC_API_URL
+// Function to get the correct API URL based on environment
+const getApiBaseUrl = (): string => {
+  // First check for environment variable
+  const envUrl = process.env.NEXT_PUBLIC_API_URL;
+  
+  if (envUrl) {
+    // If env URL is provided, ensure it has the correct protocol
+    if (!envUrl.startsWith('http')) {
+      // For production environments, default to https
+      if (process.env.NODE_ENV === 'production' || 
+          (typeof window !== 'undefined' && window.location.hostname !== 'localhost')) {
+        return `https://${envUrl}`;
+      } else {
+        return `http://${envUrl}`;
+      }
+    }
+    return envUrl;
+  }
+  
+  // If no env variable, detect based on current environment
+  if (typeof window !== 'undefined') {
+    const isLocalhost = window.location.hostname === 'localhost' || 
+                       window.location.hostname === '127.0.0.1';
+    
+    if (isLocalhost) {
+      console.log('🏷️ Using local development API: http://localhost:4000');
+      return 'http://localhost:4000';
+    } else {
+      console.log('🚀 Using production API: https://taskin-panjabi-server.onrender.com');
+      return 'https://taskin-panjabi-server.onrender.com';
+    }
+  }
+  
+  // Server-side rendering - use environment or default to local
+  return process.env.NODE_ENV === 'production' 
+    ? 'https://taskin-panjabi-server.onrender.com'
+    : 'http://localhost:4000';
+};
+
+// Get API URL with /api prefix
+const getApiUrl = (): string => {
+  const baseUrl = getApiBaseUrl();
+  return `${baseUrl}/api`;
+};
+
+// Helper function to get full image URL
+const getFullImageUrl = (imagePath: string | undefined): string => {
+  if (!imagePath) {
+    return 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&h=300&fit=crop';
+  }
+  
+  // Already a full URL
+  if (imagePath.startsWith('http') || imagePath.startsWith('data:') || imagePath.startsWith('blob:')) {
+    return imagePath;
+  }
+  
+  // Handle "undefined" in path
+  if (imagePath.includes('undefined')) {
+    console.error('Found "undefined" in image path:', imagePath);
+    return 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&h=300&fit=crop';
+  }
+  
+  // Convert relative path to full URL
+  const baseUrl = getApiBaseUrl();
+  
+  // Remove leading slash if present
+  const cleanPath = imagePath.startsWith('/') ? imagePath.substring(1) : imagePath;
+  
+  // Check if it's a file in uploads folder
+  if (imagePath.includes('uploads') || imagePath.includes('images')) {
+    // If path already contains base URL, return as is
+    if (imagePath.includes(baseUrl)) {
+      return imagePath;
+    }
+    return `${baseUrl}/${cleanPath}`;
+  }
+  
+  // Default to uploads folder
+  return `${baseUrl}/uploads/${cleanPath}`;
+};
 
 interface Product {
   _id: string;
@@ -89,22 +168,38 @@ export default function CategoryPage() {
 
   const sizes = ["S", "M", "L", "XL", "XXL", "3XL"];
 
+  // ✅ UPDATED: Use getApiUrl() instead of direct environment variable
+  const API_URL = getApiUrl();
+
   // Fetch products
   useEffect(() => {
     const fetchCategoryProducts = async () => {
       try {
         setLoading(true);
+        setError(null);
         const fixedCategory = fixedCategories.find(cat => cat.slug === slug);
+
+        console.log(`🏷️ Fetching products for category: ${slug}`);
+        console.log(`🌐 API URL: ${API_URL}`);
 
         if (fixedCategory) {
           setCategoryInfo(fixedCategory);
-          const response = await axios.get(`${API_URL}/api/products/category/${slug}`);
+          const response = await axios.get(`${API_URL}/products/category/${slug}`, {
+            timeout: 15000,
+            headers: {
+              'Accept': 'application/json',
+              'Cache-Control': 'no-cache'
+            }
+          });
           if (response.data.success) {
             const productsData = response.data.data.map((p: Product) => ({
               ...p,
-              image: p.imageUrl || p.image
+              image: getFullImageUrl(p.imageUrl || p.image)
             }));
+            console.log(`✅ Loaded ${productsData.length} products for ${slug}`);
             setProducts(productsData);
+          } else {
+            throw new Error(response.data.message || "Failed to fetch category products");
           }
         } else {
           const categoryName = slug.split("-").map(w => w[0].toUpperCase() + w.slice(1)).join(" ");
@@ -113,21 +208,41 @@ export default function CategoryPage() {
             slug, 
             description: `Explore our ${categoryName} collection` 
           });
-          const response = await axios.get(`${API_URL}/api/products`);
+          const response = await axios.get(`${API_URL}/products`, {
+            timeout: 15000,
+            headers: {
+              'Accept': 'application/json',
+              'Cache-Control': 'no-cache'
+            }
+          });
           if (response.data.success) {
             const allProducts = response.data.data;
             const categoryProducts = allProducts.filter((p: Product) => 
               p.category?.toLowerCase().includes(slug.toLowerCase())
             );
+            console.log(`✅ Loaded ${categoryProducts.length} products for dynamic category ${slug}`);
             setProducts(categoryProducts.map((p: Product) => ({
               ...p,
-              image: p.imageUrl || p.image
+              image: getFullImageUrl(p.imageUrl || p.image)
             })));
+          } else {
+            throw new Error(response.data.message || "Failed to fetch products");
           }
         }
-      } catch (err) {
-        console.error("Error fetching products:", err);
-        setError("Failed to load products");
+      } catch (err: any) {
+        console.error("❌ Error fetching products:", err);
+        
+        if (err.code === 'ECONNABORTED') {
+          setError("Request timeout. Server might be starting up. Please try again in a moment.");
+        } else if (err.response?.status === 404) {
+          setError("Category endpoint not found. Please check the backend server.");
+        } else if (err.response?.status === 500) {
+          setError("Server error. Please try again later.");
+        } else if (err.message === 'Network Error') {
+          setError(`Cannot connect to server. Make sure backend is running at: ${getApiBaseUrl()}`);
+        } else {
+          setError(err.message || "Failed to load products");
+        }
       } finally {
         setLoading(false);
       }
@@ -327,6 +442,14 @@ export default function CategoryPage() {
         <div className="container mx-auto px-4 text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600 mx-auto mb-4"></div>
           <p className="text-slate-700 font-medium">Loading collection...</p>
+          <p className="text-gray-500 text-sm mt-2">
+            Loading from: {getApiBaseUrl()}
+          </p>
+          {window.location.hostname !== 'localhost' && (
+            <p className="text-gray-400 text-xs mt-2">
+              Production backend might take 30-50 seconds to wake up on first request
+            </p>
+          )}
         </div>
       </div>
     );
@@ -340,14 +463,25 @@ export default function CategoryPage() {
             <X className="text-slate-600" size={32} />
           </div>
           <h1 className="text-2xl font-bold text-slate-900 mb-3">Error Loading Category</h1>
-          <p className="text-slate-600 mb-8">{error}</p>
-          <Link 
-            href="/category"
-            className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-slate-950 to-amber-500 text-white rounded-lg hover:from-slate-800 hover:to-amber-600 transition-all font-medium"
-          >
-            <ArrowRight className="rotate-180" size={18} />
-            Browse Categories
-          </Link>
+          <p className="text-slate-600 mb-4">{error}</p>
+          <p className="text-gray-600 text-sm mb-6">
+            Backend URL: {getApiBaseUrl()}
+          </p>
+          <div className="flex flex-col gap-3">
+            <Link 
+              href="/category"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-slate-950 to-amber-500 text-white rounded-lg hover:from-slate-800 hover:to-amber-600 transition-all font-medium justify-center"
+            >
+              <ArrowRight className="rotate-180" size={18} />
+              Browse Categories
+            </Link>
+            <button
+              onClick={() => window.location.reload()}
+              className="inline-flex items-center gap-2 px-6 py-3 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-all font-medium justify-center"
+            >
+              Try Again
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -366,10 +500,7 @@ export default function CategoryPage() {
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6">
               {categoryInfo?.name} <span className="text-amber-400">Collection</span>
             </h1>
-            {/* <p className="text-lg md:text-xl text-gray-200 mb-8">
-              {categoryInfo?.description || "Explore our premium collection of curated products"}
-            </p> */}
-              {/* Search Bar */}
+            {/* Search Bar */}
             <div className="relative max-w-2xl mx-auto">
               <div className="relative">
                 <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-800 w-5 h-5" />
@@ -704,43 +835,6 @@ export default function CategoryPage() {
             )}
           </div>
         </div>
-
-        {/* Related Categories */}
-        {/* <div className="mt-12 pt-8 border-t border-gray-200">
-          <div className="flex items-center gap-3 mb-8">
-            <div className="p-2 bg-amber-500 rounded-lg">
-              <Tag className="text-white" size={20} />
-            </div>
-            <h2 className="text-2xl font-bold text-gray-900">Explore More Collections</h2>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {fixedCategories
-              .filter((cat) => cat.slug !== slug)
-              .map((relatedCat) => (
-                <Link
-                  key={relatedCat.slug}
-                  href={`/category/${relatedCat.slug}`}
-                  className="group bg-white border border-gray-200 rounded-xl p-6 hover:border-amber-300 hover:shadow-md transition-all duration-300"
-                >
-                  <div className="flex items-center gap-4 mb-4">
-                    <div className="p-3 bg-slate-100 rounded-lg group-hover:bg-amber-50 transition-colors">
-                      <Tag className="text-slate-600 group-hover:text-amber-600" size={24} />
-                    </div>
-                    <div>
-                      <h3 className="text-xl font-bold text-gray-900 mb-1">{relatedCat.name}</h3>
-                      <p className="text-sm text-gray-600">{relatedCat.description}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-amber-600 font-medium">View Collection</span>
-                    <div className="w-8 h-8 bg-slate-100 rounded-full flex items-center justify-center group-hover:bg-amber-50 transition-colors">
-                      <ArrowRight className="text-slate-600 group-hover:text-amber-600" size={16} />
-                    </div>
-                  </div>
-                </Link>
-              ))}
-          </div>
-        </div> */}
       </div>
 
       {/* Mobile Filters Modal */}
