@@ -30,7 +30,7 @@ export interface Product {
   normalPrice: number;
   originalPrice?: number;
   offerPrice?: number;
-  salePrice?: number; // ✅ Added salePrice field
+  salePrice?: number;
   discountPercentage?: number;
   rating?: number;
   reviewCount?: number;
@@ -54,14 +54,33 @@ interface ProductCardProps {
   isLoading?: boolean;
 }
 
-const API_URL = "http://localhost:4000";
+// ==================== UTILITY FUNCTIONS ====================
 
-// Image URL helper
-const getImageUrl = (url: string) => {
+// Get API URL with fallback
+const getApiBaseUrl = (): string => {
+  const envUrl = process.env.NEXT_PUBLIC_API_URL;
+  
+  if (envUrl) {
+    // Ensure URL has protocol
+    if (!envUrl.startsWith('http')) {
+      console.warn('⚠️ API URL missing protocol, adding https://');
+      return `https://${envUrl}`;
+    }
+    return envUrl;
+  }
+  
+  // Default for local development
+  console.warn('⚠️ NEXT_PUBLIC_API_URL not set, using default: http://localhost:4000');
+  return 'http://localhost:4000';
+};
+
+// Image URL helper - Updated for production
+const getImageUrl = (url: string | undefined) => {
   if (!url || url.trim() === "") {
     return "https://images.unsplash.com/photo-1560343090-f0409e92791a?w=400&h=400&fit=crop";
   }
 
+  // Already a full URL or data URL
   if (
     url.startsWith("http://") ||
     url.startsWith("https://") ||
@@ -70,16 +89,23 @@ const getImageUrl = (url: string) => {
     return url;
   }
 
+  // Get base URL from environment
+  const baseUrl = getApiBaseUrl();
+  
+  // Handle different URL formats
   if (url.startsWith("/uploads")) {
-    return `${API_URL}${url}`;
+    return `${baseUrl}${url}`;
   }
 
   if (url.startsWith("/")) {
-    return `${API_URL}${url}`;
+    return `${baseUrl}${url}`;
   }
 
-  return `${API_URL}/uploads/${url}`;
+  // If it's just a filename
+  return `${baseUrl}/uploads/${url}`;
 };
+
+// ==================== MAIN COMPONENT ====================
 
 function ProductCard({
   product,
@@ -471,7 +497,7 @@ function ProductCard({
             </div>
 
             {/* Title with hover effect */}
-            <h3 className="font-bold text-amber-500 bg-slate-800 px-2 py- rounded-lg text-lg mb-3 line-clamp-1 group-hover:text-amber-600 transition-colors duration-300">
+            <h3 className="font-bold text-slate-900 text-lg mb-3 line-clamp-1 group-hover:text-amber-600 transition-colors duration-300">
               {product.title}
             </h3>
 
