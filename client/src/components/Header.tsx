@@ -414,11 +414,11 @@ export default function Header() {
 
   // Punjabi product announcements
   const announcements = [
-    "🎯 Punjabi Suits – Now at 20% OFF! 🎯",
-    "🔥 Patiala Salwar Special Collection 🔥",
-    "✨ Premium Punjabi Juttis – New Stock Available ✨",
-    "💫 Fashionable Turbans – Now Available Online 💫",
-    "🎁 5000+ Orders Completed – Free Shipping 🎁",
+    "Punjabi Suits – Now at 20% OFF!",
+    "Patiala Salwar Special Collection 🔥",
+    "Premium Punjabi Juttis – New Stock Available ✨",
+    "Fashionable Turbans – Now Available Online 💫",
+    "5000+ Orders Completed – Free Shipping 🎁",
   ];
 
   // Rotate announcements

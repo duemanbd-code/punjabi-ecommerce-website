@@ -252,7 +252,7 @@ export default function HeroWithFeatures() {
                     <span className="block">
                       {slide.title}
                     </span>
-                    <span className="block bg-gradient-to-r from-amber-400 via-amber-300 to-amber-200 bg-clip-text text-transparent whitespace-nowrap">
+                    <span className="block max-w-4xl bg-gradient-to-r from-amber-400 via-amber-300 to-amber-200 bg-clip-text text-transparent whitespace-nowrap">
                       {slide.subtitle}
                     </span>
                   </h1>

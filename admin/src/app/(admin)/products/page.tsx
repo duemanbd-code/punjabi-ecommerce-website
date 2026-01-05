@@ -5,7 +5,6 @@
 import { useState, useEffect } from "react";
 import { toast } from "react-hot-toast";
 import { useRouter } from "next/navigation";
-// ADD MISSING ICON IMPORTS
 import { Package, TrendingUp, AlertTriangle, Sparkles } from "lucide-react";
 import { checkAuthAndRedirect, getAuthToken } from "../../../utils/auth";
 import AdminProductsTable from "../../../components/AdminProductsTable";
@@ -40,8 +39,8 @@ const getApiBaseUrl = (): string => {
   if (envUrl) {
     // Ensure URL has protocol
     if (!envUrl.startsWith('http')) {
-      console.warn('⚠️ API URL missing protocol, adding http://');
-      return `http://${envUrl}`;
+      console.warn('⚠️ API URL missing protocol, adding https://');
+      return `https://${envUrl}`;
     }
     return envUrl;
   }
@@ -59,7 +58,7 @@ const getFullImageUrl = (imagePath: string | undefined): string => {
   }
   
   // Already a full URL
-  if (imagePath.startsWith('http')) {
+  if (imagePath.startsWith('http') || imagePath.startsWith('data:') || imagePath.startsWith('blob:')) {
     return imagePath;
   }
   
@@ -71,9 +70,17 @@ const getFullImageUrl = (imagePath: string | undefined): string => {
   
   // Convert relative path to full URL
   const baseUrl = getApiBaseUrl();
+  
+  // Remove leading slash if present to avoid double slashes
   const cleanPath = imagePath.startsWith('/') ? imagePath.substring(1) : imagePath;
   
-  return `${baseUrl}/${cleanPath}`;
+  // Handle different path formats
+  if (imagePath.startsWith('uploads/') || imagePath.includes('/uploads/')) {
+    return `${baseUrl}/${cleanPath}`;
+  }
+  
+  // If it's just a filename, assume it's in uploads folder
+  return `${baseUrl}/uploads/${cleanPath}`;
 };
 
 // Get API URL for requests
@@ -145,7 +152,6 @@ export default function AdminProductsPage() {
         title: product.title || "No Title",
         description: product.description || "",
         category: product.category || "uncategorized",
-        // FIXED: Use getFullImageUrl to ensure proper image URLs
         imageUrl: getFullImageUrl(product.imageUrl),
         normalPrice: product.normalPrice || 0,
         salePrice: product.salePrice || undefined,
@@ -192,10 +198,6 @@ export default function AdminProductsPage() {
       return;
     }
 
-    // if (!window.confirm(`Are you sure you want to delete "${product.title}"?`)) {
-    //   return;
-    // }
-
     const token = getAuthToken();
     if (!token) {
       toast.error("You are not logged in!");
@@ -222,7 +224,6 @@ export default function AdminProductsPage() {
       const data = await response.json();
       console.log("Delete response:", data);
       
-      // Update local state
       setProducts((prev) => prev.filter((p) => p._id !== id));
       toast.success("Product deleted successfully!");
       
@@ -236,7 +237,7 @@ export default function AdminProductsPage() {
         router.push("/login");
       } else if (err.message.includes("404")) {
         toast.error("Product not found on server.");
-        fetchProducts(); // Refresh list
+        fetchProducts();
       } else {
         toast.error(err.message || "Failed to delete product");
       }

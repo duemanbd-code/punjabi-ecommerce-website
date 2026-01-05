@@ -206,7 +206,7 @@ export default function Topbar() {
               href={`https://wa.me/${whatsappNumber}?text=Hello%20I%20need%20support`}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-2 bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-full shadow-md hover:shadow-lg transition-all duration-200 text-sm font-semibold group"
+              className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-full shadow-md hover:shadow-lg transition-all duration-200 text-sm font-semibold group"
               title="Chat on WhatsApp"
             >
               <MessageCircle className="w-4 h-4 group-hover:scale-110 transition-transform" />

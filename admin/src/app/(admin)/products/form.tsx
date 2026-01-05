@@ -50,6 +50,64 @@ interface ProductForm {
   status: string;
 }
 
+// ==================== UTILITY FUNCTIONS ====================
+
+// Get API URL with fallback
+const getApiBaseUrl = (): string => {
+  const envUrl = process.env.NEXT_PUBLIC_API_URL;
+  
+  if (envUrl) {
+    // Ensure URL has protocol
+    if (!envUrl.startsWith('http')) {
+      console.warn('⚠️ API URL missing protocol, adding https://');
+      return `https://${envUrl}`;
+    }
+    return envUrl;
+  }
+  
+  // Default for local development
+  console.warn('⚠️ NEXT_PUBLIC_API_URL not set, using default: http://localhost:4000');
+  return 'http://localhost:4000';
+};
+
+// Convert relative image path to full URL
+const getFullImageUrl = (imagePath: string | undefined): string => {
+  if (!imagePath) {
+    // Return a placeholder image
+    return 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&h=300&fit=crop';
+  }
+  
+  // Already a full URL
+  if (imagePath.startsWith('http') || imagePath.startsWith('data:') || imagePath.startsWith('blob:')) {
+    return imagePath;
+  }
+  
+  // Handle "undefined" in path
+  if (imagePath.includes('undefined')) {
+    console.error('Found "undefined" in image path:', imagePath);
+    return 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&h=300&fit=crop';
+  }
+  
+  // Convert relative path to full URL
+  const baseUrl = getApiBaseUrl();
+  
+  // Remove leading slash if present to avoid double slashes
+  const cleanPath = imagePath.startsWith('/') ? imagePath.substring(1) : imagePath;
+  
+  // Handle different path formats
+  if (imagePath.startsWith('uploads/') || imagePath.includes('/uploads/')) {
+    return `${baseUrl}/${cleanPath}`;
+  }
+  
+  // If it's just a filename, assume it's in uploads folder
+  return `${baseUrl}/uploads/${cleanPath}`;
+};
+
+// Get API URL for requests
+const API_BASE_URL = getApiBaseUrl();
+
+// ==================== MAIN COMPONENT ====================
+
 export default function ProductFormPage({ productId }: { productId?: string }) {
   const [form, setForm] = useState<ProductForm>({
     title: "",
@@ -114,7 +172,7 @@ export default function ProductFormPage({ productId }: { productId?: string }) {
     const fetchProduct = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`http://localhost:4000/api/products/${productId}`, {
+        const response = await fetch(`${API_BASE_URL}/api/products/${productId}`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
@@ -192,20 +250,27 @@ export default function ProductFormPage({ productId }: { productId?: string }) {
           status: productData.productStatus || productData.status || "active",
         });
 
-        // Set main image preview
+        // Set main image preview using getFullImageUrl
         if (productData.imageUrl) {
-          setImagePreview(
-            productData.imageUrl.startsWith("http")
-              ? productData.imageUrl
-              : `http://localhost:4000${productData.imageUrl}`
-          );
+          const previewUrl = getFullImageUrl(productData.imageUrl);
+          console.log("Setting main image preview:", {
+            original: productData.imageUrl,
+            preview: previewUrl
+          });
+          setImagePreview(previewUrl);
         }
 
-        // Set existing additional images previews
+        // Set existing additional images previews using getFullImageUrl
         if (productData.additionalImages && Array.isArray(productData.additionalImages)) {
-          const previews = productData.additionalImages.map((img: string) => 
-            img.startsWith("http") ? img : `http://localhost:4000${img}`
-          );
+          const previews = productData.additionalImages
+            .filter((img: string) => img && img !== "undefined")
+            .map((img: string) => getFullImageUrl(img));
+          
+          console.log("Setting additional images previews:", {
+            original: productData.additionalImages,
+            previews: previews
+          });
+          
           setExistingAdditionalImages(previews);
           setAdditionalPreviews(previews);
         }
@@ -423,7 +488,7 @@ export default function ProductFormPage({ productId }: { productId?: string }) {
           form.image.size
         );
         formData.append("image", form.image);
-      } else if (productId && imagePreview) {
+      } else if (productId && imagePreview && !imagePreview.startsWith('data:')) {
         // When updating without new image, send a flag to keep existing image
         formData.append("keepExistingImage", "true");
       }
@@ -446,8 +511,8 @@ export default function ProductFormPage({ productId }: { productId?: string }) {
       }
 
       const url = productId
-        ? `http://localhost:4000/api/products/${productId}`
-        : "http://localhost:4000/api/products";
+        ? `${API_BASE_URL}/api/products/${productId}`
+        : `${API_BASE_URL}/api/products`;
 
       const method = productId ? "PUT" : "POST";
 
@@ -1412,7 +1477,7 @@ export default function ProductFormPage({ productId }: { productId?: string }) {
                       }`}
                       onClick={() => handleCheckboxChange(flag.field as any)}
                     >
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center space-x-3">
                         <div
                           className={`w-10 h-10 rounded-lg flex items-center justify-center ${
                             flag.checked
