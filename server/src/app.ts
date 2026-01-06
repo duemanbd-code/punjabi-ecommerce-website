@@ -15,6 +15,7 @@ const allowedOrigins = [
   "http://localhost:3000",
   "http://localhost:3001",
   "https://puti-client-production.onrender.com",
+  "https://puti-client-production-admin.vercel.app"
  // ✅ Fixed: Removed extra https:// and trailing slash
 ];
 
