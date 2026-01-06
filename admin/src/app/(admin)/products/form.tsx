@@ -25,7 +25,7 @@ import {
 import Link from "next/link";
 import { checkAuthAndRedirect, getAuthToken } from "../../../utils/auth";
 
-const categories = ["classic-panjabi", "cotton-panjabi", "linen-panjabi"];
+const categories = ["regular-panjabi", "premium-panjabi", "luxury-panjabi"];
 
 interface SizeStock {
   size: string;

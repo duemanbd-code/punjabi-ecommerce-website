@@ -545,7 +545,7 @@ function ProductCard({
             </div>
 
             {/* Title with hover effect */}
-            <h3 className="font-bold text-slate-900 text-lg mb-3 line-clamp-1 group-hover:text-amber-600 transition-colors duration-300">
+            <h3 className="font-bold text-amber-500 px-2 py-1 rounded-2xl bg-slate-900 text-lg mb-3 line-clamp-1 group-hover:text-amber-600 transition-colors duration-300">
               {product.title}
             </h3>
 

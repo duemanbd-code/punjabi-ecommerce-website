@@ -41,20 +41,20 @@ export const bannerSlides: Slide[] = [
 // Static feature data
 export const features = [
   {
-    title: "Free Shipping",
-    desc: "On orders over ৳ 2000",
+    title: "Free Shipping",  
+    desc: "On Orders above ৳5,000",
     icon: "Truck",
     bg: "from-amber-500 to-orange-500",
   },
   {
     title: "Quality Guarantee",
-    desc: "Premium quality fabrics",
+    desc: "Premium Fabric & Handcrafted Zardusi",
     icon: "ShieldCheck",
     bg: "from-green-500 to-emerald-600",
   },
   {
     title: "Easy Returns",
-    desc: "30-day return policy",
+    desc: "7 Days Easy Return",
     icon: "RotateCcw",
     bg: "from-blue-500 to-cyan-500",
   },
@@ -67,30 +67,4 @@ export const features = [
 ];
 
 // Static stats data
-export const initialStats = [
-  {
-    id: 1,
-    label: "Happy Customers",
-    value: 12000,
-    icon: "Users",
-  },
-  {
-    id: 2,
-    label: "Premium Punjabi",
-    value: 42,
-    icon: "ShoppingBag",
-  },
-  {
-    id: 3,
-    label: "Orders Delivered",
-    value: 35000,
-    icon: "Truck",
-  },
-  {
-    id: 4,
-    label: "Customer Satisfaction",
-    value: 98,
-    suffix: "%",
-    icon: "Smile",
-  },
-];
+ 

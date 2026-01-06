@@ -26,8 +26,8 @@ export default function CategoryPage() {
   const categories: Category[] = [
     {
       id: "1",
-      name: "Classic Panjabi",
-      description: "Luxurious classic collections with premium fabrics and timeless designs",
+      name: "Regular panjabi",
+      description: "Regular collections with premium fabrics and timeless designs",
       imageUrl: "/panjabi-jummah.png",
       slug: "classic-panjabi",
       productCount: 0,
@@ -36,7 +36,7 @@ export default function CategoryPage() {
     },
     {
       id: "2",
-      name: "Cotton Panjabi",
+      name: "Premium Panjabi",
       description: "Comfortable daily wear perfect for everyday use and casual occasions",
       imageUrl: "/panjabi-jummah.png",
       slug: "cotton-panjabi",
@@ -46,7 +46,7 @@ export default function CategoryPage() {
     },
     {
       id: "3",
-      name: "Linen Panjabi",
+      name: "Luxury Panjabi",
       description: "Smooth and elegant designs for sophisticated looks and formal events",
       imageUrl: "/panjabi-jummah.png",
       slug: "linen-panjabi",

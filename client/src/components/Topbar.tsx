@@ -40,15 +40,15 @@ export default function Topbar() {
   }, []);
 
   const contactInfo = {
-    phone: "+880123456789",
-    email: "support@duemanbd.com",
+    phone: "+8801914600880", 
+    email: "duemanbd@gmail.com",
     location: {
       address: "Banani, Dhaka",
-      googleMapsUrl: "https://maps.google.com/?q=Banani,Dhaka,Bangladesh",
+      googleMapsUrl: "https://www.google.com/maps/place/NEST+Mega+Mall/@23.7914549,90.4060572,17z/data=!3m1!4b1!4m6!3m5!1s0x3755c700677612d7:0xd22b88878af62769!8m2!3d23.7914549!4d90.4060572!16s%2Fg%2F11y69bj9pd?entry=ttu&g_ep=EgoyMDI1MTIwOS4wIKXMDSoASAFQAw%3D%3D",
     },
   };
 
-  const whatsappNumber = "8801886177100";
+  const whatsappNumber = "+8801914600880";
 
   // Mobile view - collapsed/expanded
   if (isMobile) {

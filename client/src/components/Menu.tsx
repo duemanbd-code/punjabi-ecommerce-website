@@ -18,9 +18,9 @@ export default function Menu({ mobileMenuOpen, setMobileMenuOpen }: MenuProps) {
   // Shop by Category dropdown items
   const categoryItems = [
     { name: "All Categories", href: "#shopbycategory" },
-    { name: "Classic Panjabi", href: "/category/classic-panjabi" },
-    { name: "Cotton Panjabi", href: "/category/cotton-panjabi" },
-    { name: "Linen Panjabi", href: "/category/linen-panjabi" },
+    { name: "Regular panjabi", href: "/category/regular-panjabi" },
+    { name: "Premium panjabi", href: "/category/premium-panjabi" },
+    { name: "Luxury Panjabi", href: "/category/luxury-panjabi" },
   ];
 
   // Close menu on outside click
