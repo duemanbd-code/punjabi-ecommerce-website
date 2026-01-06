@@ -298,6 +298,8 @@ export default function Footer() {
               >
                 Cookie Policy
               </Link>
+
+              <p> this is the extra added</p>
             </div>
           </div>
         </div>
