@@ -6,7 +6,8 @@
     "build": "npm run type-install && tsc",
     "start": "node dist/server.js",
     "dev": "ts-node src/server.ts",
-    "type-install": "npm install --save-dev @types/node @types/cors @types/express @types/multer @types/bcryptjs @types/jsonwebtoken @types/mongoose"
+    "type-install": "npm install --save-dev @types/node @types/cors @types/express @types/multer @types/bcryptjs @types/jsonwebtoken @types/mongoose",
+      "seed:admin": "ts-node src/createAdmin.ts"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
