@@ -1,3 +1,8 @@
+ 
+
+
+
+
 // client/src/app/category/[slug]/page.tsx
 
 "use client";

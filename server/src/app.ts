@@ -14,8 +14,8 @@ const app = express();
 const allowedOrigins = [
   "http://localhost:3000",
   "http://localhost:3001",
-  "https://puti-clientadmin.vercel.app", // ✅ Fixed: Removed extra https://
-  "https://taskin-panjabiclient.vercel.app", // ✅ Fixed: Removed extra https:// and trailing slash
+  "https://puti-client-production.onrender.com",
+ // ✅ Fixed: Removed extra https:// and trailing slash
 ];
 
 // More flexible CORS configuration
@@ -34,7 +34,7 @@ app.use(
     },
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "Accept"],
+    allowedHeaders: ["Content-Type", "Authorization", "Accept", "cache-control"],
   })
 );
 

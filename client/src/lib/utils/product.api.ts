@@ -4,6 +4,8 @@ import { Product } from "@/types/product.types";
 import axios from "axios";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+// const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
 
 // Helper to validate if an object is a valid Product
 const isValidProduct = (item: any): item is Product => {
@@ -839,3 +841,5 @@ const productApi = {
 };
 
 export default productApi;
+
+ 

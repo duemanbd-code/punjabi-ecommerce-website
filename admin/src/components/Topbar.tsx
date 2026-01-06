@@ -2,11 +2,11 @@
 
 "use client";
 
-import { User, LogOut } from "lucide-react";
+import {  LogOut } from "lucide-react";
 
 export default function Topbar() {
   return (
-    <header className="h-16 bg-white shadow-md flex items-center justify-between px-6">
+    <header className="h-16 bg-white shadow-md flex items-center justify-between px-6 sticky top-0">
       {/* Left: Title */}
       <h1 className="font-bold text-xl text-gray-800">Admin Panel</h1>
 

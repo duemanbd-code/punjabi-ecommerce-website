@@ -133,11 +133,11 @@ export default function AdminSidebar() {
       )}
 
       {/* Sidebar */}
-      <aside
+     <aside
         className={`
-          fixed lg:static top-0 left-0 h-full
-          w-72 bg-white min-h-screen p-6 flex flex-col border-r border-gray-100 shadow-xl 
-          relative overflow-hidden z-50 transition-transform duration-300 ease-in-out
+           top-0 left-0 h-screen
+          w-72 bg-white p-6 flex flex-col border-r border-gray-100 shadow-xl 
+          sticky overflow-hidden z-50 transition-transform duration-300 ease-in-out overflow-y-auto
           ${isSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
           ${isMobile ? "w-64" : "w-72"}
         `}
