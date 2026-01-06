@@ -298,6 +298,8 @@ export default function Footer() {
               >
                 Cookie Policy
               </Link>
+
+              <p> THis is sdjsdlkfjasdlkfjslkadfjak </p>
             </div>
           </div>
         </div>
