@@ -1,3 +1,5 @@
+
+
 // client/src/types/product.types.ts
 
 export interface Product {
@@ -13,7 +15,7 @@ export interface Product {
   discountPercentage?: number;
   category: string;
   image: string;
-  imageUrl: string; // Changed from optional to required
+  imageUrl?: string;
   images?: string[];
   additionalImages?: string[];
   rating?: number;
@@ -40,7 +42,16 @@ export interface Product {
 
 
 
-// // client/src/types/product.types.ts
+
+
+
+
+
+
+
+
+
+// client/src/types/product.types.ts
 
 // export interface Product {
 //   _id: string;
@@ -55,7 +66,7 @@ export interface Product {
 //   discountPercentage?: number;
 //   category: string;
 //   image: string;
-//   imageUrl?: string;
+//   imageUrl: string; // Changed from optional to required
 //   images?: string[];
 //   additionalImages?: string[];
 //   rating?: number;
@@ -79,3 +90,4 @@ export interface Product {
 //   dimensions?: string;
 //   careInstructions?: string[];
 // }
+

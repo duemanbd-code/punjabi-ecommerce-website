@@ -11,12 +11,17 @@ import orderRoutes from "./routes/order.routes";
 const app = express();
 
 // CORRECTED allowed origins (remove double https://)
+
+const front_url= process.env.CLIENT_URL;
+const admin_url=process.env.ADMIN_URL;
+const server_url= process.env.SERVER_URL
 const allowedOrigins = [
   "http://localhost:3000",
   "http://localhost:3001",
   "https://puti-client-production.onrender.com",
   "https://puti-client-production-admin.vercel.app",
-  "https://puti-client-production-t1kq.vercel.app"
+  "https://puti-client-production-t1kq.vercel.app",
+  front_url, admin_url, server_url
  // ✅ Fixed: Removed extra https:// and trailing slash
 ];
 

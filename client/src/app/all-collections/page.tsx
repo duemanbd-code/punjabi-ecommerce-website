@@ -1,3 +1,5 @@
+
+
 // client/src/app/all-collections/page.tsx
 
 "use client";
@@ -419,7 +421,7 @@ const AllCollectionsPage = () => {
             <p className="text-gray-500 mt-4">
               Loading from: {getApiBaseUrl()}
             </p>
-            {typeof window !== 'undefined' && window.location.hostname !== 'localhost' && (
+            {window.location.hostname !== 'localhost' && (
               <p className="text-gray-400 text-sm mt-2">
                 Production backend might take 30-50 seconds to wake up on first request
               </p>
@@ -452,11 +454,7 @@ const AllCollectionsPage = () => {
                 Backend URL: {getApiBaseUrl()}
               </p>
               <button
-                onClick={() => {
-                  if (typeof window !== 'undefined') {
-                    window.location.reload();
-                  }
-                }}
+                onClick={() => window.location.reload()}
                 className="px-6 py-3 bg-gradient-to-r from-slate-950 to-amber-500 text-white rounded-lg hover:from-slate-800 hover:to-amber-600 transition-colors font-medium"
               >
                 Try Again
@@ -762,10 +760,7 @@ const AllCollectionsPage = () => {
                   {paginatedProducts.map((product) => (
                     <ProductCard
                       key={product._id || product.id}
-                      product={{
-                        ...product,
-                        imageUrl: product.imageUrl || getFullImageUrl(undefined)
-                      }}
+                      product={product}
                       viewMode={viewMode}
                       showQuickView={true}
                     />
@@ -980,7 +975,6 @@ const AllCollectionsPage = () => {
 };
 
 export default AllCollectionsPage;
-
 
 
 
@@ -1412,7 +1406,7 @@ export default AllCollectionsPage;
 //             <p className="text-gray-500 mt-4">
 //               Loading from: {getApiBaseUrl()}
 //             </p>
-//             {window.location.hostname !== 'localhost' && (
+//             {typeof window !== 'undefined' && window.location.hostname !== 'localhost' && (
 //               <p className="text-gray-400 text-sm mt-2">
 //                 Production backend might take 30-50 seconds to wake up on first request
 //               </p>
@@ -1445,7 +1439,11 @@ export default AllCollectionsPage;
 //                 Backend URL: {getApiBaseUrl()}
 //               </p>
 //               <button
-//                 onClick={() => window.location.reload()}
+//                 onClick={() => {
+//                   if (typeof window !== 'undefined') {
+//                     window.location.reload();
+//                   }
+//                 }}
 //                 className="px-6 py-3 bg-gradient-to-r from-slate-950 to-amber-500 text-white rounded-lg hover:from-slate-800 hover:to-amber-600 transition-colors font-medium"
 //               >
 //                 Try Again
@@ -1751,7 +1749,10 @@ export default AllCollectionsPage;
 //                   {paginatedProducts.map((product) => (
 //                     <ProductCard
 //                       key={product._id || product.id}
-//                       product={product}
+//                       product={{
+//                         ...product,
+//                         imageUrl: product.imageUrl || getFullImageUrl(undefined)
+//                       }}
 //                       viewMode={viewMode}
 //                       showQuickView={true}
 //                     />
@@ -1966,3 +1967,12 @@ export default AllCollectionsPage;
 // };
 
 // export default AllCollectionsPage;
+
+
+
+
+
+
+
+
+

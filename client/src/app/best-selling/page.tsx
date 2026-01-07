@@ -1,3 +1,7 @@
+
+
+
+
 // client/src/app/best-selling/page.tsx
 
 "use client";
@@ -18,6 +22,8 @@ import {
 import ProductFilters from "@/components/ProductFilters";
 import { Product } from "@/types/product.types";
 import ProductCard from "@/components/ProductCard";
+
+ 
 
 // Function to get the correct API URL based on environment
 const getApiBaseUrl = (): string => {
@@ -294,7 +300,7 @@ const BestSellingPage = () => {
       const query = searchQuery.toLowerCase();
       result = result.filter(
         (product) =>
-          (product.title || product.name || "").toLowerCase().includes(query) ||
+          product.title.toLowerCase().includes(query) ||
           (product.description &&
             product.description.toLowerCase().includes(query)) ||
           (product.category && product.category.toLowerCase().includes(query))
@@ -328,7 +334,7 @@ const BestSellingPage = () => {
       if (showNewArrivals && !product.isNew) return false;
       if (
         showDiscount &&
-        (!product.originalPrice || product.originalPrice <= product.normalPrice)
+        (!product.discountPrice || product.discountPrice >= product.normalPrice)
       )
         return false;
       return true;
@@ -456,7 +462,7 @@ const BestSellingPage = () => {
         : 0;
 
     const discountProducts = products.filter(
-      (p) => p.originalPrice && p.originalPrice > p.normalPrice
+      (p) => p.discountPrice && p.discountPrice < p.normalPrice
     );
 
     return {
@@ -489,7 +495,7 @@ const BestSellingPage = () => {
             <p className="text-gray-500 mt-4">
               Loading from: {getApiBaseUrl()}
             </p>
-            {typeof window !== 'undefined' && window.location.hostname !== 'localhost' && (
+            {window.location.hostname !== 'localhost' && (
               <p className="text-gray-400 text-sm mt-2">
                 Production backend might take 30-50 seconds to wake up on first request
               </p>
@@ -522,11 +528,7 @@ const BestSellingPage = () => {
                 Backend URL: {getApiBaseUrl()}
               </p>
               <button
-                onClick={() => {
-                  if (typeof window !== 'undefined') {
-                    window.location.reload();
-                  }
-                }}
+                onClick={() => window.location.reload()}
                 className="px-6 py-3 bg-gradient-to-r from-slate-950 to-amber-500 text-white rounded-lg hover:from-slate-800 hover:to-amber-600 transition-colors font-medium"
               >
                 Try Again
@@ -811,10 +813,7 @@ const BestSellingPage = () => {
                   {paginatedProducts.map((product) => (
                     <ProductCard
                       key={product._id || product.id}
-                      product={{
-                        ...product,
-                        imageUrl: product.imageUrl || getFullImageUrl(undefined)
-                      }}
+                      product={product}
                       viewMode={viewMode}
                       showQuickView={true}
                     />
@@ -1042,6 +1041,7 @@ export default BestSellingPage;
 
 
 
+
 // // client/src/app/best-selling/page.tsx
 
 // "use client";
@@ -1062,8 +1062,6 @@ export default BestSellingPage;
 // import ProductFilters from "@/components/ProductFilters";
 // import { Product } from "@/types/product.types";
 // import ProductCard from "@/components/ProductCard";
-
- 
 
 // // Function to get the correct API URL based on environment
 // const getApiBaseUrl = (): string => {
@@ -1340,7 +1338,7 @@ export default BestSellingPage;
 //       const query = searchQuery.toLowerCase();
 //       result = result.filter(
 //         (product) =>
-//           product.title.toLowerCase().includes(query) ||
+//           (product.title || product.name || "").toLowerCase().includes(query) ||
 //           (product.description &&
 //             product.description.toLowerCase().includes(query)) ||
 //           (product.category && product.category.toLowerCase().includes(query))
@@ -1374,7 +1372,7 @@ export default BestSellingPage;
 //       if (showNewArrivals && !product.isNew) return false;
 //       if (
 //         showDiscount &&
-//         (!product.discountPrice || product.discountPrice >= product.normalPrice)
+//         (!product.originalPrice || product.originalPrice <= product.normalPrice)
 //       )
 //         return false;
 //       return true;
@@ -1502,7 +1500,7 @@ export default BestSellingPage;
 //         : 0;
 
 //     const discountProducts = products.filter(
-//       (p) => p.discountPrice && p.discountPrice < p.normalPrice
+//       (p) => p.originalPrice && p.originalPrice > p.normalPrice
 //     );
 
 //     return {
@@ -1535,7 +1533,7 @@ export default BestSellingPage;
 //             <p className="text-gray-500 mt-4">
 //               Loading from: {getApiBaseUrl()}
 //             </p>
-//             {window.location.hostname !== 'localhost' && (
+//             {typeof window !== 'undefined' && window.location.hostname !== 'localhost' && (
 //               <p className="text-gray-400 text-sm mt-2">
 //                 Production backend might take 30-50 seconds to wake up on first request
 //               </p>
@@ -1568,7 +1566,11 @@ export default BestSellingPage;
 //                 Backend URL: {getApiBaseUrl()}
 //               </p>
 //               <button
-//                 onClick={() => window.location.reload()}
+//                 onClick={() => {
+//                   if (typeof window !== 'undefined') {
+//                     window.location.reload();
+//                   }
+//                 }}
 //                 className="px-6 py-3 bg-gradient-to-r from-slate-950 to-amber-500 text-white rounded-lg hover:from-slate-800 hover:to-amber-600 transition-colors font-medium"
 //               >
 //                 Try Again
@@ -1853,7 +1855,10 @@ export default BestSellingPage;
 //                   {paginatedProducts.map((product) => (
 //                     <ProductCard
 //                       key={product._id || product.id}
-//                       product={product}
+//                       product={{
+//                         ...product,
+//                         imageUrl: product.imageUrl || getFullImageUrl(undefined)
+//                       }}
 //                       viewMode={viewMode}
 //                       showQuickView={true}
 //                     />
@@ -2077,3 +2082,5 @@ export default BestSellingPage;
 // };
 
 // export default BestSellingPage;
+
+
