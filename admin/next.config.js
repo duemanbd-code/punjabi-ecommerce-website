@@ -7,6 +7,7 @@ const nextConfig = {
     ignoreDuringBuilds: true,
   },
   images: {
+        domains: ['localhost', 'puti-client-production.onrender.com'],
     unoptimized: true,
   },
 };

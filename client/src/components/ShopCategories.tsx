@@ -70,6 +70,7 @@ export default function ShopCategories() {
   useEffect(() => {
     const checkMobile = () => {
       const mobile = window.innerWidth < 1024;
+      
       setIsMobile(mobile);
     };
     checkMobile();

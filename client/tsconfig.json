@@ -1,41 +1,57 @@
 {
   "compilerOptions": {
-    "target": "es5",
-    "lib": ["dom", "dom.iterable", "esnext"],
-    "allowJs": true,
-    "skipLibCheck": true,
+    "target": "ES2020",
+    "lib": ["DOM", "DOM.Iterable", "ESNext"],
+
+    "allowJs": false,
     "strict": true,
+    "skipLibCheck": true,
     "noEmit": true,
+
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+
     "esModuleInterop": true,
-    "module": "esnext",
-    "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
+
     "jsx": "preserve",
     "incremental": true,
+
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    },
+
     "plugins": [
       {
         "name": "next"
       }
-    ],
-    "paths": {
-      "@/*": ["./src/*"]
-    }
+    ]
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts"
+  ],
   "exclude": ["node_modules"]
 }
 
-//  {
+
+
+
+// {
 //   "compilerOptions": {
 //     "target": "es5",
 //     "lib": ["dom", "dom.iterable", "esnext"],
+//     "allowJs": false,
 //     "skipLibCheck": true,
 //     "strict": true,
 //     "noEmit": true,
 //     "esModuleInterop": true,
 //     "module": "esnext",
-//     "moduleResolution": "node",
+//     "moduleResolution": "bundler",
 //     "resolveJsonModule": true,
 //     "isolatedModules": true,
 //     "jsx": "preserve",
@@ -52,3 +68,4 @@
 //   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
 //   "exclude": ["node_modules"]
 // }
+ 

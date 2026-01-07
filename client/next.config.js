@@ -1,18 +1,19 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false
   },
   eslint: {
-    ignoreDuringBuilds: true,
+    ignoreDuringBuilds: true
   },
   images: {
-    domains: ['localhost', 'taskin-panjabi-server.onrender.com'],
-    unoptimized: true,
-  },
+    domains: ['localhost', 'https://puti-client-production.onrender.com'],
+    unoptimized: true
+  }
 };
 
 module.exports = nextConfig;
+
  
 
 
