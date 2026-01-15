@@ -14,14 +14,18 @@ const app = express();
 
 const front_url= process.env.CLIENT_URL;
 const admin_url=process.env.ADMIN_URL;
-const server_url= process.env.SERVER_URL
+const server_url= process.env.SERVER_URL;
+const live_frontend= process.env.LIVE_ADMIN_URL;
+const live_admin= process.env.LIVE_FRONTEND_URL;
 const allowedOrigins = [
   "http://localhost:3000",
   "http://localhost:3001",
   "https://puti-client-production.onrender.com",
   "https://puti-client-production-admin.vercel.app",
   "https://puti-client-production-t1kq.vercel.app",
-  front_url, admin_url, server_url
+ " https://admin.duemanbd.com",
+ "https://www.duemanbd.com",
+  front_url, admin_url, server_url, live_admin, live_frontend
  // ✅ Fixed: Removed extra https:// and trailing slash
 ];
 
