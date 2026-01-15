@@ -25,6 +25,7 @@ const allowedOrigins = [
   "https://puti-client-production-t1kq.vercel.app",
  " https://admin.duemanbd.com",
  "https://www.duemanbd.com",
+  'https://duemanbd.com',
   front_url, admin_url, server_url, live_admin, live_frontend
  // ✅ Fixed: Removed extra https:// and trailing slash
 ];

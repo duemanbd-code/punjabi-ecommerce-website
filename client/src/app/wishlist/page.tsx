@@ -23,9 +23,8 @@ const getImageUrl = (url: string) => {
       (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
     
     const API_URL = isLocalhost 
-      ? 'http://localhost:4000' 
-      : 'https://taskin-panjabi-server.onrender.com';
-    
+  ? 'http://localhost:4000' 
+      : 'https://taskin-panjabi-server.onrender.com';    
     return `${API_URL}${url}`;
   }
   
@@ -35,9 +34,8 @@ const getImageUrl = (url: string) => {
       (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
     
     const API_URL = isLocalhost 
-      ? 'http://localhost:4000' 
-      : 'https://taskin-panjabi-server.onrender.com';
-    
+  ? 'http://localhost:4000' 
+      : 'https://taskin-panjabi-server.onrender.com';    
     return `${API_URL}${url}`;
   }
   
@@ -46,9 +44,8 @@ const getImageUrl = (url: string) => {
     (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
   
   const API_URL = isLocalhost 
-    ? 'http://localhost:4000' 
-    : 'https://taskin-panjabi-server.onrender.com';
-  
+  ? 'http://localhost:4000' 
+      : 'https://taskin-panjabi-server.onrender.com';  
   return `${API_URL}/uploads/${url}`;
 };
 
@@ -371,7 +368,7 @@ export default function WishlistPage() {
           Save your favorite products here to buy later. Start exploring our collection!
         </p>
         <Link
-          href="/product"
+          href="/"
           className="group px-8 py-4 bg-gradient-to-r from-slate-900 to-slate-700 hover:from-slate-950 hover:to-slate-800 text-white hover:text-amber-500 rounded-lg flex items-center gap-3 hover:bg-amber-700 transition-all duration-300 shadow-lg hover:shadow-xl"
         >
           <ArrowLeft className="group-hover:-translate-x-1 transition-transform" size={20} />
@@ -456,7 +453,7 @@ export default function WishlistPage() {
                 Refresh List
               </button>
               <Link
-                href="/products"
+                href="/"
                 className="px-8 py-3 bg-white border border-slate-200 text-slate-700 font-medium rounded-lg hover:bg-slate-50 transition-colors"
               >
                 Browse Products
@@ -510,7 +507,7 @@ export default function WishlistPage() {
 
             <div className="flex flex-col sm:flex-row items-center gap-4">
               <Link
-                href="/products"
+                href="/"
                 className="group flex items-center gap-3 text-slate-700 hover:text-slate-900 font-medium transition-colors"
               >
                 <div className="p-2 bg-slate-100 rounded-lg group-hover:bg-slate-200 transition-colors">

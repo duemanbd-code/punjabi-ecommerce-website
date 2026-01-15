@@ -19,7 +19,7 @@ export default function Footer() {
   };
 
   return (
-    <footer className="bg-gradient-to-b from-slate-100 to-white text-slate-900">
+    <footer className="bg-[#d0d0d0] text-slate-900">
       {/* Main Footer Content */}
       <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-8 sm:py-10 md:py-12">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
@@ -30,8 +30,8 @@ export default function Footer() {
                 <Image
                   src="/brand-logo.png"
                   alt="PunjabiStyle Logo"
-                  width={120}
-                  height={40}
+                  width={140}
+                  height={60}
                   className="object-contain h-10 w-auto"
                 />
               </div>
@@ -271,7 +271,7 @@ export default function Footer() {
                 href="https://www.facebook.com/mironsolutions"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="font-semibold text-slate-800 hover:text-slate-950 transition-colors"
+                className="font-semibold text-[#ec650b] hover:text-slate-950 transition-colors"
                 
               >
                 Miron Solution
@@ -298,8 +298,6 @@ export default function Footer() {
               >
                 Cookie Policy
               </Link>
-
-              <p> THis is sdjsdlkfjasdlkfjslkadfjak </p>
             </div>
           </div>
         </div>
