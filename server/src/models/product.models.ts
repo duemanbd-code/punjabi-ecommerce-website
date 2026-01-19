@@ -15,6 +15,7 @@ interface IProductVariant {
   normalPrice?: number;
   salePrice?: number;
   images?: string[];
+  imagesPublicIds?: string[]; // Add Cloudinary public IDs for variant images
   status: 'in_stock' | 'low_stock' | 'out_of_stock';
   warehouseLocation?: {
     warehouse?: string;
@@ -69,8 +70,11 @@ export interface IProduct extends Document {
   salePrice?: number;
   rating?: number;
   imageUrl: string;
+  imagePublicId?: string; // Cloudinary public ID for main image
   images?: string[];
   additionalImages?: string[];
+  additionalImagesPublicIds?: string[]; // Cloudinary public IDs for additional images
+  
   isBestSelling: boolean;
   isNewProduct: boolean;
   featured: boolean;
@@ -171,6 +175,10 @@ const ProductSchema = new Schema<IProduct>({
     type: String, 
     default: "" 
   },
+  imagePublicId: {
+    type: String,
+    default: "" // Cloudinary public ID for main image
+  },
   images: { 
     type: [String], 
     default: [] 
@@ -179,6 +187,11 @@ const ProductSchema = new Schema<IProduct>({
     type: [String],
     default: []
   },
+  additionalImagesPublicIds: {
+    type: [String],
+    default: [] // Cloudinary public IDs for additional images
+  },
+  
   isBestSelling: { 
     type: Boolean, 
     default: false 
@@ -304,6 +317,7 @@ const ProductSchema = new Schema<IProduct>({
       normalPrice: Number,
       salePrice: Number,
       images: [String],
+      imagesPublicIds: [String], // Add Cloudinary public IDs for variant images
       status: {
         type: String,
         enum: ["in_stock", "low_stock", "out_of_stock"],

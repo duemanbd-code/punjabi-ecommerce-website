@@ -7,17 +7,18 @@
     "start": "node dist/server.js",
     "dev": "ts-node src/server.ts",
     "type-install": "npm install --save-dev @types/node @types/cors @types/express @types/multer @types/bcryptjs @types/jsonwebtoken @types/mongoose",
-      "seed:admin": "ts-node src/createAdmin.ts"
+    "seed:admin": "ts-node src/createAdmin.ts"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
-    "cloudinary": "^1.37.0",
+    "cloudinary": "^1.41.3",
     "cors": "^2.8.5",
     "dotenv": "^16.6.1",
     "express": "^4.22.1",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^7.8.8",
-    "multer": "^1.4.5-lts.1"
+    "multer": "^1.4.5-lts.1",
+    "multer-storage-cloudinary": "^4.0.0"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.2",

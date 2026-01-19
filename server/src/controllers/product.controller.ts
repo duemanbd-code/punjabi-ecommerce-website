@@ -1,31 +1,31 @@
 // server/src/controller/product.controller.ts
 
-// server/src/controller/product.controller.ts
-
-// Using any type to bypass TypeScript errors
 import Product from '../models/product.models';
-import fs from "fs";
-import path from "path";
+import { deleteImage } from '../utils/cloudinary';
 
-// Helper function to delete old image files
-const deleteOldImages = (imagePaths: string | string[]) => {
-  if (!imagePaths) return;
-
-  const paths = Array.isArray(imagePaths) ? imagePaths : [imagePaths];
-  
-  paths.forEach((imagePath) => {
-    if (imagePath && imagePath.startsWith("/uploads/")) {
-      const fullPath = path.join(__dirname, "../../..", imagePath);
-      if (fs.existsSync(fullPath)) {
-        try {
-          fs.unlinkSync(fullPath);
-          console.log(`Deleted old image: ${fullPath}`);
-        } catch (error) {
-          console.error(`Error deleting image ${fullPath}:`, error);
-        }
-      }
-    }
-  });
+// Helper function to extract public ID from Cloudinary URL
+const getCloudinaryPublicId = (url: string): string | null => {
+  if (!url) return null;
+  try {
+    // Cloudinary URL format: https://res.cloudinary.com/cloudname/image/upload/v1234567890/folder/filename.jpg
+    const urlParts = url.split('/');
+    const uploadIndex = urlParts.indexOf('upload');
+    if (uploadIndex === -1) return null;
+    
+    // Get the part after 'upload'
+    const pathParts = urlParts.slice(uploadIndex + 1);
+    // Remove version prefix (v1234567890)
+    const withoutVersion = pathParts.filter(part => !part.startsWith('v'));
+    
+    // Join and remove file extension
+    const fullPath = withoutVersion.join('/');
+    const publicId = fullPath.replace(/\.[^/.]+$/, "");
+    
+    return publicId;
+  } catch (error) {
+    console.error('Error extracting public ID:', error);
+    return null;
+  }
 };
 
 // Create product
@@ -59,20 +59,26 @@ export const createProduct = async (req: any, res: any) => {
       keepExistingImage,
     } = req.body;
 
-    // Get files
+    // Get files from Cloudinary
     const files = req.files as { [fieldname: string]: any[] };
     
     // Process main image
     let imageUrl = "";
+    let imagePublicId = "";
     if (files && files.image && files.image[0]) {
-      imageUrl = `/uploads/${files.image[0].filename}`;
+      imageUrl = files.image[0].path; // Cloudinary URL
+      imagePublicId = files.image[0].filename; // Cloudinary public ID
     }
 
     // Process additional images
     let additionalImages: string[] = [];
+    let additionalImagesPublicIds: string[] = [];
     if (files && files.additionalImages) {
       additionalImages = files.additionalImages.map(
-        (file: any) => `/uploads/${file.filename}`
+        (file: any) => file.path
+      );
+      additionalImagesPublicIds = files.additionalImages.map(
+        (file: any) => file.filename
       );
       console.log(`Added ${additionalImages.length} additional images`);
     }
@@ -152,8 +158,9 @@ export const createProduct = async (req: any, res: any) => {
       productStatus: req.body.productStatus || "active",
       inventoryStatus,
       imageUrl,
-      images: additionalImages,
+      imagePublicId,
       additionalImages,
+      additionalImagesPublicIds,
       hasVariants: variants.length > 0,
       variants: variants,
       tags: tags ? JSON.parse(tags) : [],
@@ -217,7 +224,7 @@ export const updateProduct = async (req: any, res: any) => {
     if (req.body.salePrice !== undefined) updateData.salePrice = parseFloat(req.body.salePrice);
     if (req.body.sku !== undefined) updateData.sku = req.body.sku;
 
-    // Parse boolean fields - use new field names
+    // Parse boolean fields
     if (req.body.featured !== undefined) {
       updateData.featured = req.body.featured === "true" || req.body.featured === true;
     }
@@ -285,36 +292,46 @@ export const updateProduct = async (req: any, res: any) => {
 
     // Handle main image update
     if (files && files.image && files.image[0]) {
-      // Delete old main image
-      if (existingProduct.imageUrl) {
-        deleteOldImages(existingProduct.imageUrl);
+      // Delete old main image from Cloudinary
+      if (existingProduct.imagePublicId) {
+        await deleteImage(existingProduct.imagePublicId);
       }
-      updateData.imageUrl = `/uploads/${files.image[0].filename}`;
+      updateData.imageUrl = files.image[0].path;
+      updateData.imagePublicId = files.image[0].filename;
     } else if (req.body.keepExistingImage !== "true") {
       // If no new image and not keeping existing, remove image
-      if (existingProduct.imageUrl) {
-        deleteOldImages(existingProduct.imageUrl);
+      if (existingProduct.imagePublicId) {
+        await deleteImage(existingProduct.imagePublicId);
       }
       updateData.imageUrl = "";
+      updateData.imagePublicId = "";
     }
 
-    // Handle additional images
+    // Handle additional images update
     if (files && files.additionalImages && files.additionalImages.length > 0) {
-      // Delete old additional images
-      if (existingProduct.additionalImages && existingProduct.additionalImages.length > 0) {
-        deleteOldImages(existingProduct.additionalImages);
+      // Delete old additional images from Cloudinary
+      if (existingProduct.additionalImagesPublicIds && existingProduct.additionalImagesPublicIds.length > 0) {
+        for (const publicId of existingProduct.additionalImagesPublicIds) {
+          await deleteImage(publicId);
+        }
       }
       
       updateData.additionalImages = files.additionalImages.map(
-        (file: any) => `/uploads/${file.filename}`
+        (file: any) => file.path
+      );
+      updateData.additionalImagesPublicIds = files.additionalImages.map(
+        (file: any) => file.filename
       );
       updateData.images = updateData.additionalImages;
     } else if (req.body.keepExistingAdditionalImages !== "true") {
       // If no new additional images and not keeping existing, clear them
-      if (existingProduct.additionalImages && existingProduct.additionalImages.length > 0) {
-        deleteOldImages(existingProduct.additionalImages);
+      if (existingProduct.additionalImagesPublicIds && existingProduct.additionalImagesPublicIds.length > 0) {
+        for (const publicId of existingProduct.additionalImagesPublicIds) {
+          await deleteImage(publicId);
+        }
       }
       updateData.additionalImages = [];
+      updateData.additionalImagesPublicIds = [];
       updateData.images = [];
     }
 
@@ -521,13 +538,15 @@ export const deleteProduct = async (req: any, res: any) => {
 
     console.log(`Deleting product: ${existingProduct.title} (${existingProduct._id})`);
 
-    // Delete all images
-    if (existingProduct.imageUrl) {
-      deleteOldImages(existingProduct.imageUrl);
+    // Delete all images from Cloudinary
+    if (existingProduct.imagePublicId) {
+      await deleteImage(existingProduct.imagePublicId);
     }
     
-    if (existingProduct.additionalImages && existingProduct.additionalImages.length > 0) {
-      deleteOldImages(existingProduct.additionalImages);
+    if (existingProduct.additionalImagesPublicIds && existingProduct.additionalImagesPublicIds.length > 0) {
+      for (const publicId of existingProduct.additionalImagesPublicIds) {
+        await deleteImage(publicId);
+      }
     }
 
     // Delete the product
@@ -611,7 +630,7 @@ export const getProductsByCategory = async (req: any, res: any) => {
   }
 };
 
-// INVENTORY METHODS
+// INVENTORY METHODS (unchanged, as they don't deal with images)
 export const getInventoryReport = async (req: any, res: any) => {
   try {
     const { 
