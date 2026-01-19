@@ -1,4 +1,4 @@
-// File: D:\delivery-project\puti-client-production\admin\src\app\(admin)\orders\page.tsx
+// File: D:\Web Development\Projects\Client Projects\puti-client-production\admin\src\app\(admin)\orders\page.tsx
 import * as entry from '../../../../../src/app/(admin)/orders/page.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 
