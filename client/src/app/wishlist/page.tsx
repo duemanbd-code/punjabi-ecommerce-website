@@ -4,7 +4,19 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Heart, Trash2, ArrowLeft, ShoppingCart, RefreshCw, Package, Loader2, Sparkles, X, AlertTriangle, CheckCircle } from "lucide-react";
+import {
+  Heart,
+  Trash2,
+  ArrowLeft,
+  ShoppingCart,
+  RefreshCw,
+  Package,
+  Loader2,
+  Sparkles,
+  X,
+  AlertTriangle,
+  CheckCircle,
+} from "lucide-react";
 import { useWishlist } from "@/context/WishlistContext";
 import axios from "axios";
 import ProductCard from "@/components/ProductCard";
@@ -12,46 +24,52 @@ import ProductCard from "@/components/ProductCard";
 // Helper to get image URL
 const getImageUrl = (url: string) => {
   if (!url) return "";
-  
+
   // If URL is already a full URL (http/https/data), return as is
   if (url.startsWith("http") || url.startsWith("data:")) return url;
-  
+
   // If URL starts with /uploads, prepend appropriate API URL
   if (url.startsWith("/uploads")) {
     // Check if we're in development or production
-    const isLocalhost = typeof window !== 'undefined' && 
-      (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-    
-    const API_URL = isLocalhost 
-  ? 'http://localhost:4000' 
-      : 'https://taskin-panjabi-server.onrender.com';    
+    const isLocalhost =
+      typeof window !== "undefined" &&
+      (window.location.hostname === "localhost" ||
+        window.location.hostname === "127.0.0.1");
+
+    const API_URL = isLocalhost
+      ? "http://localhost:4000"
+      : "https://taskin-panjabi-server.onrender.com";
     return `${API_URL}${url}`;
   }
-  
+
   // For relative paths, prepend appropriate API URL
   if (url.startsWith("/")) {
-    const isLocalhost = typeof window !== 'undefined' && 
-      (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-    
-    const API_URL = isLocalhost 
-  ? 'http://localhost:4000' 
-      : 'https://taskin-panjabi-server.onrender.com';    
+    const isLocalhost =
+      typeof window !== "undefined" &&
+      (window.location.hostname === "localhost" ||
+        window.location.hostname === "127.0.0.1");
+
+    const API_URL = isLocalhost
+      ? "http://localhost:4000"
+      : "https://taskin-panjabi-server.onrender.com";
     return `${API_URL}${url}`;
   }
-  
+
   // For bare filenames, construct the full URL
-  const isLocalhost = typeof window !== 'undefined' && 
-    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-  
-  const API_URL = isLocalhost 
-  ? 'http://localhost:4000' 
-      : 'https://taskin-panjabi-server.onrender.com';  
+  const isLocalhost =
+    typeof window !== "undefined" &&
+    (window.location.hostname === "localhost" ||
+      window.location.hostname === "127.0.0.1");
+
+  const API_URL = isLocalhost
+    ? "http://localhost:4000"
+    : "https://taskin-panjabi-server.onrender.com";
   return `${API_URL}/uploads/${url}`;
 };
 
 export default function WishlistPage() {
   const { wishlist, removeFromWishlist, clearWishlist } = useWishlist();
-  
+
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -61,14 +79,31 @@ export default function WishlistPage() {
 
   // Get API URL based on current environment
   const getApiUrl = () => {
-    if (typeof window === 'undefined') return ''; // SSR fallback
-    
-    const isLocalhost = window.location.hostname === 'localhost' || 
-                       window.location.hostname === '127.0.0.1';
-    
-    return isLocalhost 
-      ? 'http://localhost:4000' 
-      : 'https://taskin-panjabi-server.onrender.com';
+    if (typeof window === "undefined") return ""; // SSR fallback
+
+    // Use environment variable if available
+    const envUrl = process.env.NEXT_PUBLIC_API_URL;
+
+    if (envUrl) {
+      // Ensure proper protocol
+      if (envUrl.startsWith("http")) {
+        return envUrl;
+      }
+      // Add protocol
+      if (process.env.NODE_ENV === "production") {
+        return `https://${envUrl}`;
+      }
+      return `http://${envUrl}`;
+    }
+
+    const isLocalhost =
+      window.location.hostname === "localhost" ||
+      window.location.hostname === "127.0.0.1";
+
+    // For production, use the server directly
+    return isLocalhost
+      ? "http://localhost:4000"
+      : "https://taskin-panjabi-server.onrender.com";
   };
 
   useEffect(() => {
@@ -87,11 +122,11 @@ export default function WishlistPage() {
 
         // Get API URL for current environment
         const API_URL = getApiUrl();
-        
+
         // Try to fetch all products first
         const allProductsResponse = await axios.get(`${API_URL}/api/products`);
         let allProducts = [];
-        
+
         if (allProductsResponse.data && allProductsResponse.data.data) {
           allProducts = allProductsResponse.data.data;
         } else if (Array.isArray(allProductsResponse.data)) {
@@ -101,8 +136,8 @@ export default function WishlistPage() {
         console.log("All products:", allProducts.length);
 
         // Filter products that are in wishlist
-        const wishlistProducts = allProducts.filter((product: any) => 
-          wishlist.some(item => item.id === product._id)
+        const wishlistProducts = allProducts.filter((product: any) =>
+          wishlist.some((item) => item.id === product._id),
         );
 
         console.log("Wishlist products found:", wishlistProducts.length);
@@ -118,26 +153,27 @@ export default function WishlistPage() {
           originalPrice: product.originalPrice || product.normalPrice,
           stock: product.stock || product.stockQuantity || 0,
           imageUrl: getImageUrl(product.imageUrl),
-          additionalImages: Array.isArray(product.additionalImages) 
+          additionalImages: Array.isArray(product.additionalImages)
             ? product.additionalImages.map(getImageUrl)
             : Array.isArray(product.images)
-            ? product.images.map(getImageUrl)
-            : [],
+              ? product.images.map(getImageUrl)
+              : [],
           rating: product.rating || 0,
           reviewCount: product.reviewCount || 0,
           isBestSelling: product.isBestSelling || false,
           isNew: product.isNew || false,
           featured: product.featured || false,
           brand: product.brand,
-          sizes: Array.isArray(product.sizes) 
-            ? product.sizes.map((s: any) => typeof s === 'object' ? s.size : s)
+          sizes: Array.isArray(product.sizes)
+            ? product.sizes.map((s: any) =>
+                typeof s === "object" ? s.size : s,
+              )
             : [],
           colors: Array.isArray(product.colors) ? product.colors : [],
           discountPercentage: product.discountPercentage,
         }));
 
         setProducts(processedProducts);
-
       } catch (err: any) {
         console.error("Error loading wishlist products:", err);
         setError("Failed to load wishlist. Please try again.");
@@ -152,9 +188,11 @@ export default function WishlistPage() {
   const handleAddToCart = async (product: any) => {
     try {
       const cart = JSON.parse(localStorage.getItem("cart") || "[]");
-      
-      const existingIndex = cart.findIndex((item: any) => item.id === product._id);
-      
+
+      const existingIndex = cart.findIndex(
+        (item: any) => item.id === product._id,
+      );
+
       if (existingIndex >= 0) {
         cart[existingIndex].quantity += 1;
       } else {
@@ -174,15 +212,17 @@ export default function WishlistPage() {
 
       localStorage.setItem("cart", JSON.stringify(cart));
       window.dispatchEvent(new Event("cart-updated"));
-      
+
       // Visual feedback
-      const button = document.querySelector(`[data-product-id="${product._id}"]`);
+      const button = document.querySelector(
+        `[data-product-id="${product._id}"]`,
+      );
       if (button) {
         button.innerHTML = '<ShoppingCart className="w-4 h-4" /> Added!';
-        button.classList.add('bg-amber-700');
+        button.classList.add("bg-amber-700");
         setTimeout(() => {
           button.innerHTML = '<ShoppingCart className="w-4 h-4" /> Add to Cart';
-          button.classList.remove('bg-amber-700');
+          button.classList.remove("bg-amber-700");
         }, 2000);
       }
     } catch (error) {
@@ -198,12 +238,12 @@ export default function WishlistPage() {
   const confirmClearWishlist = async () => {
     setIsClearing(true);
     setShowClearConfirm(false);
-    
+
     await clearWishlist();
-    
+
     setIsClearing(false);
     setShowSuccessToast(true);
-    
+
     // Auto-hide success toast after 3 seconds
     setTimeout(() => {
       setShowSuccessToast(false);
@@ -225,7 +265,9 @@ export default function WishlistPage() {
               <div className="p-2 bg-red-50 rounded-lg">
                 <AlertTriangle className="w-6 h-6 text-red-600" />
               </div>
-              <h3 className="text-xl font-bold text-slate-900">Clear Wishlist</h3>
+              <h3 className="text-xl font-bold text-slate-900">
+                Clear Wishlist
+              </h3>
             </div>
             <button
               onClick={() => setShowClearConfirm(false)}
@@ -249,7 +291,11 @@ export default function WishlistPage() {
               Are you sure you want to clear your entire wishlist?
             </p>
             <p className="text-center text-slate-500 text-sm">
-              This will remove <span className="font-bold text-red-600">{wishlist.length} items</span> permanently.
+              This will remove{" "}
+              <span className="font-bold text-red-600">
+                {wishlist.length} items
+              </span>{" "}
+              permanently.
             </p>
           </div>
 
@@ -294,7 +340,9 @@ export default function WishlistPage() {
           </div>
           <div className="flex-1">
             <p className="font-medium text-slate-900">Wishlist cleared</p>
-            <p className="text-sm text-slate-600">All items have been removed</p>
+            <p className="text-sm text-slate-600">
+              All items have been removed
+            </p>
           </div>
           <button
             onClick={() => setShowSuccessToast(false)}
@@ -333,7 +381,9 @@ export default function WishlistPage() {
             </div>
           </div>
         </div>
-        <h2 className="text-2xl font-bold text-slate-900 mb-2">Something went wrong</h2>
+        <h2 className="text-2xl font-bold text-slate-900 mb-2">
+          Something went wrong
+        </h2>
         <p className="text-slate-600 mb-8 max-w-md">{error}</p>
         <div className="flex gap-4">
           <button
@@ -363,15 +413,21 @@ export default function WishlistPage() {
           </div>
           <Sparkles className="absolute -top-2 -right-2 w-8 h-8 text-amber-500" />
         </div>
-        <h2 className="text-3xl font-bold text-slate-900 mb-3">Your Wishlist is Empty</h2>
+        <h2 className="text-3xl font-bold text-slate-900 mb-3">
+          Your Wishlist is Empty
+        </h2>
         <p className="text-slate-600 mb-8 max-w-md">
-          Save your favorite products here to buy later. Start exploring our collection!
+          Save your favorite products here to buy later. Start exploring our
+          collection!
         </p>
         <Link
           href="/"
           className="group px-8 py-4 bg-gradient-to-r from-slate-900 to-slate-700 hover:from-slate-950 hover:to-slate-800 text-white hover:text-amber-500 rounded-lg flex items-center gap-3 hover:bg-amber-700 transition-all duration-300 shadow-lg hover:shadow-xl"
         >
-          <ArrowLeft className="group-hover:-translate-x-1 transition-transform" size={20} />
+          <ArrowLeft
+            className="group-hover:-translate-x-1 transition-transform"
+            size={20}
+          />
           <span className="font-semibold">Browse Products</span>
         </Link>
       </div>
@@ -395,16 +451,19 @@ export default function WishlistPage() {
             </div>
             <h1 className="text-4xl font-bold text-slate-900">My Wishlist</h1>
           </div>
-          
+
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
             <div>
               <p className="text-slate-600">
-                <span className="font-semibold text-slate-900">{wishlist.length}</span> item{wishlist.length > 1 ? "s" : ""} saved
-                {products.length < wishlist.length && 
+                <span className="font-semibold text-slate-900">
+                  {wishlist.length}
+                </span>{" "}
+                item{wishlist.length > 1 ? "s" : ""} saved
+                {products.length < wishlist.length && (
                   <span className="text-amber-600 ml-2">
                     ({wishlist.length - products.length} currently unavailable)
                   </span>
-                }
+                )}
               </p>
             </div>
 
@@ -441,9 +500,12 @@ export default function WishlistPage() {
             <div className="inline-flex p-4 bg-slate-100 rounded-full mb-6">
               <Package className="w-12 h-12 text-slate-400" />
             </div>
-            <h3 className="text-2xl font-bold text-slate-900 mb-3">No Products Found</h3>
+            <h3 className="text-2xl font-bold text-slate-900 mb-3">
+              No Products Found
+            </h3>
             <p className="text-slate-600 mb-8 max-w-md mx-auto">
-              Some items in your wishlist may no longer be available or there was an issue loading them.
+              Some items in your wishlist may no longer be available or there
+              was an issue loading them.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <button
@@ -473,8 +535,8 @@ export default function WishlistPage() {
                     <Trash2 size={18} className="text-red-500" />
                   </button>
                 </div>
-                <ProductCard 
-                  product={product} 
+                <ProductCard
+                  product={product}
                   onAddToCart={() => handleAddToCart(product)}
                   customButton={
                     <button
@@ -501,7 +563,9 @@ export default function WishlistPage() {
               </div>
               <div>
                 <p className="text-sm text-slate-600">Total saved items</p>
-                <p className="text-2xl font-bold text-slate-900">{wishlist.length}</p>
+                <p className="text-2xl font-bold text-slate-900">
+                  {wishlist.length}
+                </p>
               </div>
             </div>
 
@@ -511,7 +575,10 @@ export default function WishlistPage() {
                 className="group flex items-center gap-3 text-slate-700 hover:text-slate-900 font-medium transition-colors"
               >
                 <div className="p-2 bg-slate-100 rounded-lg group-hover:bg-slate-200 transition-colors">
-                  <ArrowLeft className="group-hover:-translate-x-1 transition-transform" size={18} />
+                  <ArrowLeft
+                    className="group-hover:-translate-x-1 transition-transform"
+                    size={18}
+                  />
                 </div>
                 Continue Shopping
               </Link>
