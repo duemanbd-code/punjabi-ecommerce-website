@@ -77,13 +77,15 @@ export default function AdminLoginPage() {
           <p className="text-gray-600">Sign in to continue</p>
         </div>
 
-        <form onSubmit={handleLogin} className="bg-white rounded-2xl shadow-xl p-8">
+        <form onSubmit={handleLogin} autoComplete="off" className="bg-white rounded-2xl shadow-xl p-8">
           <div className="space-y-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Email Address
               </label>
               <input
+                name="email"
+                autoComplete="off"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -97,6 +99,8 @@ export default function AdminLoginPage() {
                 Password
               </label>
               <input
+                name="password"
+                autoComplete="new-password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -125,3 +129,4 @@ export default function AdminLoginPage() {
     </div>
   );
 }
+
