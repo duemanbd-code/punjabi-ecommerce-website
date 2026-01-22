@@ -1,3 +1,5 @@
+// client/src/app/product/[id]/page.tsx
+
 "use client";
 
 import { useState, useEffect, useRef } from "react";
@@ -327,7 +329,7 @@ export default function ProductDetailPage() {
           reviewCount: productData.reviewCount || 0,
           views: productData.views || 0,
           sold: productData.sold || 0,
-          returnPolicy: productData.returnPolicy || "30 days return policy",
+          returnPolicy: productData.returnPolicy || "7 days return policy",
           shippingInfo:
             productData.shippingInfo || "Free shipping on orders above ৳5000",
           minOrder: productData.minOrder || 1,
@@ -977,7 +979,7 @@ export default function ProductDetailPage() {
                   <ul className="space-y-2 text-sm text-slate-600">
                     <li className="flex items-center gap-2">
                       <Check size={14} className="text-emerald-600" />
-                      <span>30 days hassle-free return policy</span>
+                      <span>7 days hassle-free return policy</span>
                     </li>
                     <li className="flex items-center gap-2">
                       <Check size={14} className="text-emerald-600" />
@@ -1518,10 +1520,10 @@ export default function ProductDetailPage() {
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
       {/* Action Success Message Popup - Responsive */}
       {actionMessage && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
           <div className="animate-in fade-in zoom-in duration-300 w-full max-w-sm">
             <div
-              className={`px-6 py-5 sm:px-8 sm:py-6 rounded-2xl shadow-2xl backdrop-blur-sm ${
+              className={`px-6 py-5 sm:px-8 sm:py-6 rounded-2xl shadow-2xl${
                 actionMessage.type === "cart"
                   ? "bg-gradient-to-r from-emerald-700 to-emerald-500"
                   : actionMessage.type === "love"
@@ -1650,7 +1652,7 @@ export default function ProductDetailPage() {
               <div className="absolute top-3 sm:top-4 right-3 sm:right-4">
                 <button
                   onClick={handleShare}
-                  className="p-2 sm:p-3 bg-white/95 backdrop-blur-sm rounded-lg sm:rounded-xl shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 opacity-0 group-hover:opacity-100"
+                  className="p-2 sm:p-3 bg-white/95 rounded-lg sm:rounded-xl shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 opacity-0 group-hover:opacity-100"
                   title="Share this product"
                 >
                   <Share2 className="w-4 h-4 sm:w-5 sm:h-5 text-slate-700" />
@@ -1672,7 +1674,7 @@ export default function ProductDetailPage() {
                 )}
 
                 {product.isNew && (
-                  <div className="px-3 py-1.5 sm:px-4 sm:py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-bold rounded-full shadow-lg backdrop-blur-sm text-xs sm:text-sm">
+                  <div className="px-3 py-1.5 sm:px-4 sm:py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-bold rounded-full shadow-lg text-xs sm:text-sm">
                     <div className="flex items-center gap-1 sm:gap-2">
                       <Sparkles size={12} className="sm:w-4 sm:h-4" />
                       NEW
@@ -1681,7 +1683,7 @@ export default function ProductDetailPage() {
                 )}
 
                 {product.isBestSelling && (
-                  <div className="px-3 py-1.5 sm:px-4 sm:py-2 bg-gradient-to-r from-amber-500 to-amber-600 text-white font-bold rounded-full shadow-lg backdrop-blur-sm text-xs sm:text-sm">
+                  <div className="px-3 py-1.5 sm:px-4 sm:py-2 bg-gradient-to-r from-amber-500 to-amber-600 text-white font-bold rounded-full shadow-lg text-xs sm:text-sm">
                     <div className="flex items-center gap-1 sm:gap-2">
                       <TrendingUp size={12} className="sm:w-4 sm:h-4" />
                       BEST
@@ -1690,7 +1692,7 @@ export default function ProductDetailPage() {
                 )}
 
                 {product.featured && (
-                  <div className="px-3 py-1.5 sm:px-4 sm:py-2 bg-gradient-to-r from-purple-500 to-purple-600 text-white font-bold rounded-full shadow-lg backdrop-blur-sm text-xs sm:text-sm">
+                  <div className="px-3 py-1.5 sm:px-4 sm:py-2 bg-gradient-to-r from-purple-500 to-purple-600 text-white font-bold rounded-full shadow-lg text-xs sm:text-sm">
                     <div className="flex items-center gap-1 sm:gap-2">
                       <Sparkles size={12} className="sm:w-4 sm:h-4" />
                       FEATURED
@@ -1711,7 +1713,7 @@ export default function ProductDetailPage() {
               {/* Stock Status */}
               {isOutOfStock && (
                 <div className="absolute bottom-3 sm:bottom-4 left-3 sm:left-4 z-10">
-                  <div className="px-3 py-1.5 sm:px-4 sm:py-2 bg-gradient-to-r from-slate-500 to-slate-600 text-white text-xs sm:text-sm font-bold rounded-full shadow-lg backdrop-blur-sm">
+                  <div className="px-3 py-1.5 sm:px-4 sm:py-2 bg-gradient-to-r from-slate-500 to-slate-600 text-white text-xs sm:text-sm font-bold rounded-full shadow-lg">
                     <div className="flex items-center gap-1 sm:gap-2">
                       <Package size={12} className="sm:w-4 sm:h-4" />
                       <span>Out of Stock</span>

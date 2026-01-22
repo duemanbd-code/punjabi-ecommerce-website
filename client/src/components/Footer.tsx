@@ -271,7 +271,7 @@ export default function Footer() {
                 href="https://www.facebook.com/mironsolutions"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="font-semibold text-[#ec650b] hover:text-slate-950 transition-colors"
+                className="font-semibold hover:text-slate-950 transition-colors"
                 
               >
                 Miron Solution

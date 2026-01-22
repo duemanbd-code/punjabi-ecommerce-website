@@ -156,7 +156,7 @@ const CODCheckoutModal = memo(function CODCheckoutModal({
                   ? "bg-emerald-100 text-emerald-700" 
                   : "bg-amber-100 text-amber-700"
               }`}>
-                {deliveryType === "dhaka" ? "৳50 Shipping" : "৳80 Shipping"}
+                {deliveryType === "dhaka" ? "৳80 Shipping" : "৳150 Shipping"}
               </span>
             </div>
             
@@ -173,7 +173,7 @@ const CODCheckoutModal = memo(function CODCheckoutModal({
                   <MapPin className="w-5 h-5" />
                   <div className="text-center">
                     <div className="font-bold">Inside Dhaka</div>
-                    <div className="text-xs opacity-90">৳50 shipping</div>
+                    <div className="text-xs opacity-90">৳80 shipping</div>
                   </div>
                 </button>
                 <button
@@ -187,7 +187,7 @@ const CODCheckoutModal = memo(function CODCheckoutModal({
                   <Globe className="w-5 h-5" />
                   <div className="text-center">
                     <div className="font-bold">Outside Dhaka</div>
-                    <div className="text-xs opacity-90">৳80 shipping</div>
+                    <div className="text-xs opacity-90">৳150 shipping</div>
                   </div>
                 </button>
               </div>

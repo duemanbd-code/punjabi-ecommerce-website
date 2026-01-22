@@ -1,3 +1,5 @@
+// client/src/components/CheckoutForm.tsx
+
 'use client'
 
 import { useState } from 'react'
@@ -349,7 +351,7 @@ export default function CheckoutForm({ product, selectedSize, onClose }: Checkou
           </div>
           <div className="flex items-center gap-3 text-sm text-gray-600">
             <Package className="w-4 h-4 text-purple-500" />
-            <span>Easy returns within 30 days</span>
+            <span>Easy returns within 7 days</span>
           </div>
         </div>
       </div>
