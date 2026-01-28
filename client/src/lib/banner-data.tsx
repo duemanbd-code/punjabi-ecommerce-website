@@ -15,11 +15,11 @@ export interface Slide {
 // Static banner data - you can update these as needed
 export const bannerSlides: Slide[] = [
   {
-    title: "Classic Normal Panjabi",
+    title: "Regular Normal Panjabi",
     subtitle: "Traditional Elegance",
     description: "",
-    image: "/panjabi-jummah.png",
-    buttonText: "Shop Now",
+    image: "/panjabi-linen.png",
+    buttonText: "Best Panjabi kinun",
     buttonLink: "/all-collections",
     badge: "Classic",
     collection: "Normal Collection",

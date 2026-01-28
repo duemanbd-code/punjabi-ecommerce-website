@@ -1,4 +1,4 @@
-//
+// client/src/components/ShopCategories.tsx
 
 "use client";
 
@@ -32,9 +32,9 @@ export default function ShopCategories() {
       id: "1",
       name: "Regular panjabi",
       description: "Luxurious classic collections with premium fabrics and timeless designs",
-      imageUrl: "/panjabi-jummah.png",
+      imageUrl: "/regular1.jpeg",
       slug: "regular-panjabi",
-      productCount: 156,
+      productCount: 10,
       gradient: "from-slate-950 to-amber-500",
       bgGradient: "",
     },
@@ -42,9 +42,9 @@ export default function ShopCategories() {
       id: "2",
       name: "Premium panjabi",
       description: "Comfortable daily wear perfect for everyday use and casual occasions",
-      imageUrl: "/panjabi-jummah.png",
+      imageUrl: "/premium1.jpeg",
       slug: "premium-panjabi",
-      productCount: 234,
+      productCount: 17,
       gradient: "from-slate-950 to-amber-500",
       bgGradient: "from-blue-50 to-cyan-50",
     },
@@ -52,9 +52,9 @@ export default function ShopCategories() {
       id: "3",
       name: "Luxury Panjabi",
       description: "Smooth and elegant designs for sophisticated looks and formal events",
-      imageUrl: "/panjabi-jummah.png",
+      imageUrl: "/luxury1.jpeg",
       slug: "luxury-panjabi",
-      productCount: 189,
+      productCount: 3,
       gradient: "from-slate-950 to-amber-500",
       bgGradient: "from-red-50 to-orange-50",
     },
@@ -286,25 +286,31 @@ export default function ShopCategories() {
                     <div className={`
                       relative bg-gradient-to-br from-white to-gray-50 rounded-xl sm:rounded-2xl shadow-lg sm:shadow-xl
                       overflow-hidden transform transition-all duration-500 group-hover:scale-[1.02] group-hover:shadow-2xl
-                      ${isMobile ? 'w-full h-[380px]' : 'w-[320px] lg:w-[360px] xl:w-[380px] h-[420px] lg:h-[450px] xl:h-[480px]'}
+                      ${isMobile ? 'w-full h-[440px]' : 'w-[320px] lg:w-[360px] xl:w-[380px] h-[480px] lg:h-[520px] xl:h-[550px]'}
                     `}>
                       {/* Top Gradient Bar */}
                       <div
                         className={`absolute top-0 left-0 right-0 h-1.5 sm:h-2 bg-gradient-to-r ${category.gradient} z-20`}
                       ></div>
 
-                      {/* Category Image */}
-                      <div className={`relative ${isMobile ? 'h-[180px]' : 'h-[220px] lg:h-[250px] xl:h-[280px]'} w-full overflow-hidden`}>
-                        <div className="absolute inset-0">
+                      {/* Category Image Container */}
+                      <div className={`
+                        relative ${isMobile ? 'h-[240px]' : 'h-[280px] lg:h-[320px] xl:h-[350px]'} 
+                        w-full overflow-hidden bg-gradient-to-br from-white via-gray-50 to-gray-100
+                        flex items-center justify-center p-4
+                      `}>
+                        {/* Image Wrapper */}
+                        <div className="relative w-full h-full flex items-center justify-center">
                           <img
                             src={hasError ? fallbackImage : category.imageUrl}
                             alt={category.name}
-                            className="w-full h-full object-cover transform transition-all duration-700 group-hover:scale-110"
+                            className="max-w-full max-h-full object-contain transform transition-all duration-700 group-hover:scale-105"
                             onError={() => handleImageError(category.id)}
                             loading="lazy"
                           />
+                          {/* Subtle Gradient Overlay */}
                           <div
-                            className={`absolute inset-0 bg-gradient-to-t ${category.gradient} opacity-20 group-hover:opacity-30 transition-opacity duration-500`}
+                            className={`absolute inset-0 bg-gradient-to-t ${category.gradient} opacity-10 group-hover:opacity-15 transition-opacity duration-500`}
                           ></div>
                         </div>
 

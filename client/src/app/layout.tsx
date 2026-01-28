@@ -1,7 +1,5 @@
 // client/src/app/layout.tsx
 
-// client/src/app/layout.tsx
-
 import type { Metadata } from "next";
 import { Inter, Roboto_Mono } from "next/font/google";
 import "./globals.css";
