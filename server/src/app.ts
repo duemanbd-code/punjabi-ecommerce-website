@@ -21,7 +21,7 @@ const live_admin = process.env.LIVE_FRONTEND_URL;
 const allowedOrigins = [
   "http://localhost:3000",
   "http://localhost:3001",
-  "https://puti-client-production.onrender.com",
+  "https://punjabi-ecommerce-website.onrender.com",
   "https://puti-client-production-admin.vercel.app",
   "https://puti-client-production-t1kq.vercel.app",
   "https://admin.duemanbd.com",  // ✅ FIXED: Removed leading space
