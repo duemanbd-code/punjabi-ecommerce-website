@@ -85,7 +85,7 @@ export interface IProduct extends Document {
   discountPercentage?: number;
   
   // Inventory fields
-  sku: string;
+  sku: string;  // This will be our custom product code
   manageStock: boolean;
   stockQuantity: number;
   reservedQuantity: number;
@@ -208,11 +208,12 @@ const ProductSchema = new Schema<IProduct>({
   // ===== INVENTORY FIELDS =====
   sku: { 
     type: String, 
-    required: [true, "SKU is required"],
+    required: [true, "SKU/Product Code is required"],
     unique: true,
     index: true,
     trim: true,
-    uppercase: true
+    uppercase: true,
+    // Removed auto-generation - will be provided by admin
   },
   
   manageStock: { 
@@ -415,10 +416,11 @@ const ProductSchema = new Schema<IProduct>({
 
 // ===== MIDDLEWARE =====
 
-// Generate SKU if not provided
+// Generate SKU only if not provided (admin can provide custom SKU)
 ProductSchema.pre<IProduct>('save', function(next) {
   const product = this;
   
+  // Only generate SKU if not provided by admin
   if (!product.sku && product.title) {
     const titleAbbr = product.title
       .split(' ')
@@ -430,6 +432,9 @@ ProductSchema.pre<IProduct>('save', function(next) {
     const timestamp = Date.now().toString().slice(-4);
     
     product.sku = `${titleAbbr}-${randomNum}-${timestamp}`.toUpperCase();
+  } else if (product.sku) {
+    // Ensure SKU is uppercase
+    product.sku = product.sku.toUpperCase();
   }
   
   // Calculate offer price and discount
