@@ -16,8 +16,8 @@ const robotoMono = Roboto_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Duemanbd Ecommerce",
-  description: "Ecommerce website",
+  title: "Dueman Bd",
+  description: "A trusted premium punjabi online shop",
 };
 
 export default function RootLayout({
