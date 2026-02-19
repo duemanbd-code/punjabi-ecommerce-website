@@ -1,5 +1,6 @@
 import AllCollectionsSection from "@/components/AllCollectionsSection";
 import BestSelling from "@/components/BestSelling";
+import FeaturesSection from "@/components/FeaturesSection";
 import HeroBanner from "@/components/HeroBanner";
 import NewArrivals from "@/components/NewArrivals";
 import ShopCategories from "@/components/ShopCategories";
@@ -13,6 +14,7 @@ export default function Home() {
       <AllCollectionsSection/>
       <BestSelling/>
       <NewArrivals />
+      <FeaturesSection/>
  
     </main>
   );
