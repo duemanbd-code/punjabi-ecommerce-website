@@ -1,0 +1,100 @@
+[33m193ffc7[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mabdulhalim[m[33m)[m Remove Next.js build files and ignore .next
+[33m65261de[m[33m ([m[1;31morigin/abdulhalim[m[33m)[m added the GTM
+[33mf53f560[m[33m ([m[1;32mmiron[m[33m)[m fixed render issue
+[33m9d32c9d[m setup
+[33m150e4de[m yes
+[33m3736d81[m admin panel routes secured
+[33m459948a[m updated
+[33m213fcea[m fix login page
+[33mf292e79[m next
+[33m7276e75[m status
+[33mc0775d9[m full upd
+[33m27de3c6[m yahhoo
+[33m894d8cc[m yes
+[33maa800d1[m yes
+[33m62c74b5[m updated
+[33mec3256b[m fixed
+[33mbaf806b[m Fix issue
+[33m9d53204[m everything
+[33md145ca8[m final commit
+[33ma68d617[m changed many things
+[33mae54c69[m added live server env
+[33mf221498[m do it renew again
+[33mf564e27[m added url
+[33m8be94f4[m added front end url
+[33me00fe77[m remove the js and add ts
+[33mdf58126[m fixed the four files
+[33m35323a1[m remove the javascript
+[33m98bc8a1[m added this
+[33m9e14b08[m added many things
+[33m4aaeba4[m remove the allow js
+[33m7180af9[m restore
+[33m9fa5c43[m added ts config.json
+[33mfba167d[m deleted the ts config
+[33mfa78c2b[m Fix TypeScript moduleResolution for Next.js build
+[33md4ec36f[m modified
+[33mfb62af0[m deleted the pnpm
+[33ma30a023[m fixed the client modification
+[33maa171fc[m added admin url
+[33m43cb6e8[m fix the window erro
+[33m74941e8[m added env file in the admin and client
+[33m80c193f[m fix the mongodb url and env
+[33m0bc319d[m updated
+[33mab9a69e[m yess
+[33ma647ce5[m updated latest
+[33m0e34791[m ok
+[33m114741d[m updated al
+[33m2aeb46d[m perfect
+[33mb11c22f[m uhf
+[33m85b2b73[m u
+[33mfc63027[m u
+[33me090818[m updated all
+[33m8f8f173[m u
+[33m1c53720[m u
+[33mccba419[m u
+[33m6c8f4fd[m u
+[33m97a2ac1[m u
+[33maf487c1[m Ready for production deploy
+[33mdc7aad5[m u
+[33m7e441c4[m U
+[33m47ac79e[m Updated
+[33m6e3884c[m Fix Tailwind PostCSS for Vercel
+[33m455b9f4[m Fix Tailwind autoprefixer build error
+[33m642c4be[m Fix: add autoprefixer & postcss for Tailwind
+[33m5a63f85[m fix: vercel deploy stable
+[33mf5922ea[m ready for vercel deploy
+[33m20176b7[m u
+[33mc5cb014[m Replace Geist fonts with Inter & Roboto Mono for Vercel build
+[33m03bbf03[m Fix fonts for Vercel build
+[33m067f2d0[m Fix layout with local fonts for deployment
+[33m70455a2[m Fix layout fonts for Vercel build
+[33m966d4fe[m fix: update dependencies and clean install
+[33m8ed0368[m updated
+[33m88839bc[m I
+[33mda24eb5[m U
+[33mcf3610a[m U
+[33m0e6c09b[m U
+[33m6f9c1ef[m u
+[33m7c6b398[m u
+[33mb1ca366[m u
+[33mc626a97[m updated
+[33mb814b44[m updated
+[33m96897d2[m updated
+[33m1ce3a4d[m updated
+[33m190ebc9[m updated
+[33mc6934a1[m updated
+[33m7abee41[m updated
+[33m7daa123[m updated
+[33m4cf8162[m updated
+[33m5222334[m updated
+[33md69563c[m updated
+[33m987fe1f[m updated
+[33m6ee94dc[m updated
+[33mef6bbd2[m updated
+[33medbcd0f[m update
+[33mad97338[m  updated
+[33mb0dfc1c[m Fix TS2307: add cors and types
+[33m966d99b[m  update
+[33m44b863a[m updated trace
+[33mf037c94[m Updated loca environment
+[33m62be615[m first commit

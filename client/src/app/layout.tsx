@@ -1,6 +1,7 @@
 // client/src/app/layout.tsx
 
 import type { Metadata } from "next";
+import Script from "next/script";
 import { Inter, Roboto_Mono } from "next/font/google";
 import "./globals.css";
 import Providers from "@/components/Providers";
@@ -16,8 +17,8 @@ const robotoMono = Roboto_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Dueman Bd",
-  description: "A trusted premium punjabi online shop",
+  title: "Duemanbd Ecommerce",
+  description: "Ecommerce website",
 };
 
 export default function RootLayout({
@@ -27,7 +28,36 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${inter.variable} ${robotoMono.variable}`}>
+      <head>
+        {/* Google Tag Manager  */}
+        <Script
+          id="gtm-head"
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-5G4W84S9')
+            `,
+          }}
+        />
+        {/* End Google Tag Manager   */}
+      </head>
+
       <body className="antialiased">
+        {/* Google Tag Manager (noscript)  */}
+        <noscript>
+          <iframe
+            src="https://www.googletagmanager.com/ns.html?id=GTM-5G4W84S9"
+            height="0"
+            width="0"
+            style={{ display: "none", visibility: "hidden" }}
+          ></iframe>
+        </noscript>
+        {/* End Google Tag Manager (noscript)  */}
+
         <Providers>
           <main>{children}</main>
         </Providers>
@@ -35,3 +65,41 @@ export default function RootLayout({
     </html>
   );
 }
+
+// // client/src/app/layout.tsx
+
+// import type { Metadata } from "next";
+// import { Inter, Roboto_Mono } from "next/font/google";
+// import "./globals.css";
+// import Providers from "@/components/Providers";
+
+// const inter = Inter({
+//   variable: "--font-inter",
+//   subsets: ["latin"],
+// });
+
+// const robotoMono = Roboto_Mono({
+//   variable: "--font-roboto-mono",
+//   subsets: ["latin"],
+// });
+
+// export const metadata: Metadata = {
+//   title: "Dueman Bd",
+//   description: "A trusted premium punjabi online shop",
+// };
+
+// export default function RootLayout({
+//   children,
+// }: {
+//   children: React.ReactNode;
+// }) {
+//   return (
+//     <html lang="en" className={`${inter.variable} ${robotoMono.variable}`}>
+//       <body className="antialiased">
+//         <Providers>
+//           <main>{children}</main>
+//         </Providers>
+//       </body>
+//     </html>
+//   );
+// }

@@ -3,7 +3,6 @@
 import mongoose, { Schema, Document } from "mongoose";
 
 // ===== TYPE DEFINITIONS =====
-
 interface IProductVariant {
   sku: string;
   size?: string;
