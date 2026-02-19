@@ -1,7 +1,5 @@
 // admin/src/components/AdminSidebar.tsx
 
-// admin/src/components/AdminSidebar.tsx
-
 "use client";
 
 import Link from "next/link";
