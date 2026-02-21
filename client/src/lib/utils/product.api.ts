@@ -1,4 +1,4 @@
-// client/src/utils/product.api.ts
+// client/src/utils/product.api.ts - COMPLETE UPDATED FILE WITH PAGINATION
 
 import { Product } from "@/types/product.types";
 import axios from "axios";
@@ -24,7 +24,7 @@ const getApiBaseUrl = (): string => {
   
   // Fallback based on NODE_ENV
   if (process.env.NODE_ENV === 'production') {
-    return 'https://puti-client-production.onrender.com';
+    return 'https://taskin-panjabi-server.onrender.com';
   }
   
   // Default to localhost for development
@@ -191,61 +191,152 @@ const handleApiError = (error: any, context: string): never => {
   );
 };
 
-// Core API Functions
-export async function fetchAllProducts(): Promise<Product[]> {
+// ===== PAGINATION INTERFACE =====
+export interface PaginatedResponse<T> {
+  data: T[];
+  pagination: {
+    currentPage: number;
+    totalPages: number;
+    totalProducts: number;
+    limit: number;
+    hasNextPage: boolean;
+    hasPrevPage: boolean;
+  };
+}
+
+// ===== CORE API FUNCTIONS WITH PAGINATION =====
+export async function fetchAllProducts(
+  page: number = 1,
+  limit: number = 20,
+  filters?: {
+    category?: string;
+    search?: string;
+    minPrice?: number;
+    maxPrice?: number;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
+  }
+): Promise<PaginatedResponse<Product>> {
   try {
-    console.log(`Fetching all products from ${API_BASE_URL}/api/products`);
-    const response = await axios.get(`${API_BASE_URL}/api/products`, {
+    let url = `${API_BASE_URL}/api/products?page=${page}&limit=${limit}`;
+    
+    if (filters) {
+      if (filters.category && filters.category !== 'all') {
+        url += `&category=${encodeURIComponent(filters.category)}`;
+      }
+      if (filters.search) {
+        url += `&search=${encodeURIComponent(filters.search)}`;
+      }
+      if (filters.minPrice !== undefined) {
+        url += `&minPrice=${filters.minPrice}`;
+      }
+      if (filters.maxPrice !== undefined) {
+        url += `&maxPrice=${filters.maxPrice}`;
+      }
+      if (filters.sortBy) {
+        url += `&sortBy=${filters.sortBy}&sortOrder=${filters.sortOrder || 'desc'}`;
+      }
+    }
+    
+    console.log(`Fetching products page ${page} from:`, url);
+    
+    const response = await axios.get(url, {
       timeout: 15000,
     });
 
-    // Log response for debugging
-    console.log("All products API response:", {
-      status: response.status,
-      hasData: !!response.data,
-      dataType: typeof response.data,
-      isArray: Array.isArray(response.data),
-      keys: response.data ? Object.keys(response.data) : [],
-    });
+    // Handle paginated response
+    const products = extractProducts(response.data.data || response.data);
+    const pagination = response.data.pagination || {
+      currentPage: page,
+      totalPages: 1,
+      totalProducts: products.length,
+      limit,
+      hasNextPage: false,
+      hasPrevPage: false
+    };
 
-    const products = extractProducts(response.data);
-    console.log(`Successfully fetched ${products.length} products`);
-    return products;
+    console.log(`Successfully fetched ${products.length} products (page ${page} of ${pagination.totalPages})`);
+    
+    return {
+      data: products,
+      pagination
+    };
   } catch (error: any) {
     return handleApiError(error, "fetching all products");
   }
 }
 
-export async function fetchBestSellingProducts(): Promise<Product[]> {
+// ===== FIXED: BEST SELLING PRODUCTS =====
+export async function fetchBestSellingProducts(
+  page: number = 1,
+  limit: number = 20
+): Promise<PaginatedResponse<Product>> {
   try {
-    const products = await fetchAllProducts();
-    const bestSelling = products
-      .filter((p) => p.isBestSelling || (p.rating && p.rating >= 4.5))
-      .slice(0, 12);
-
-    console.log(`Found ${bestSelling.length} best selling products`);
-    return bestSelling;
+    // Fetch all products first
+    const result = await fetchAllProducts(1, 100);
+    
+    // ACTUALLY FILTER for best selling products
+    const allProducts = result.data || [];
+    const bestSelling = allProducts.filter(product => 
+      product.isBestSelling === true
+    );
+    
+    console.log(`🔥 Found ${bestSelling.length} best selling products out of ${allProducts.length} total`);
+    
+    // Apply pagination to filtered results
+    const startIndex = (page - 1) * limit;
+    const paginatedProducts = bestSelling.slice(startIndex, startIndex + limit);
+    
+    return {
+      data: paginatedProducts,
+      pagination: {
+        currentPage: page,
+        totalPages: Math.ceil(bestSelling.length / limit) || 1,
+        totalProducts: bestSelling.length,
+        limit,
+        hasNextPage: page < Math.ceil(bestSelling.length / limit),
+        hasPrevPage: page > 1
+      }
+    };
   } catch (error: any) {
     console.error("Error fetching best selling products:", error);
-    return [];
+    return { 
+      data: [], 
+      pagination: { 
+        currentPage: 1, 
+        totalPages: 1, 
+        totalProducts: 0, 
+        limit, 
+        hasNextPage: false, 
+        hasPrevPage: false 
+      } 
+    };
   }
 }
 
-export async function fetchNewArrivalsProducts(): Promise<Product[]> {
+// ===== FIXED: NEW ARRIVALS PRODUCTS =====
+export async function fetchNewArrivalsProducts(
+  page: number = 1,
+  limit: number = 20
+): Promise<PaginatedResponse<Product>> {
   try {
-    const products = await fetchAllProducts();
+    // Fetch all products first
+    const result = await fetchAllProducts(1, 100);
+    
+    // ACTUALLY FILTER for new arrivals
+    const allProducts = result.data || [];
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-    // Get new flagged products
-    const newProducts = products.filter((p) => p.isNew);
-
-    // Get products created in last 30 days
-    const recentProducts = products.filter((p) => {
-      if (!p.createdAt) return false;
+    // Get products with isNew flag
+    const newProducts = allProducts.filter(p => p.isNew === true);
+    
+    // Get products created in last 30 days (as fallback)
+    const recentProducts = allProducts.filter(p => {
+      if (!p.createdAt || p.isNew) return false;
       try {
         const createdAt = new Date(p.createdAt);
-        return createdAt > thirtyDaysAgo && !p.isNew;
+        return createdAt > thirtyDaysAgo;
       } catch {
         return false;
       }
@@ -254,70 +345,91 @@ export async function fetchNewArrivalsProducts(): Promise<Product[]> {
     // Combine and deduplicate
     const allNewArrivals = [...newProducts, ...recentProducts];
     const uniqueIds = new Set();
-    const result = allNewArrivals
-      .filter((p) => {
+    const uniqueNewArrivals = allNewArrivals
+      .filter(p => {
         if (uniqueIds.has(p._id)) return false;
         uniqueIds.add(p._id);
         return true;
       })
-      .slice(0, 12);
-
-    console.log(`Found ${result.length} new arrival products`);
-    return result;
-  } catch (error) {
-    console.error("Error fetching new arrivals:", error);
-    return [];
-  }
-}
-
-export async function fetchProductsByCategory(
-  category: string
-): Promise<Product[]> {
-  try {
-    console.log(`Fetching products for category: ${category}`);
-
-    // First try the category endpoint directly
-    try {
-      const response = await axios.get(
-        `${API_BASE_URL}/api/products/category/${encodeURIComponent(category)}`,
-        { timeout: 10000 }
-      );
-      console.log("Category endpoint response:", {
-        status: response.status,
-        hasData: !!response.data,
+      .sort((a, b) => {
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return dateB - dateA;
       });
 
-      if (response.data) {
-        const products = extractProducts(response.data);
-        console.log(`Found ${products.length} products via category endpoint`);
-        return products.slice(0, 8);
+    console.log(`✨ Found ${uniqueNewArrivals.length} new arrivals (${newProducts.length} flagged, ${recentProducts.length} recent)`);
+    
+    // Apply pagination
+    const startIndex = (page - 1) * limit;
+    const paginatedProducts = uniqueNewArrivals.slice(startIndex, startIndex + limit);
+    
+    return {
+      data: paginatedProducts,
+      pagination: {
+        currentPage: page,
+        totalPages: Math.ceil(uniqueNewArrivals.length / limit) || 1,
+        totalProducts: uniqueNewArrivals.length,
+        limit,
+        hasNextPage: page < Math.ceil(uniqueNewArrivals.length / limit),
+        hasPrevPage: page > 1
       }
-    } catch (categoryError) {
-      console.log(
-        "Category endpoint failed, falling back to filtering:",
-        categoryError
-      );
-    }
-
-    // Fallback: fetch all and filter
-    const products = await fetchAllProducts();
-    const filtered = products
-      .filter((p) => {
-        if (!p.category) return false;
-        return p.category.toLowerCase().includes(category.toLowerCase());
-      })
-      .slice(0, 8);
-
-    console.log(
-      `Found ${filtered.length} products for category "${category}" via filtering`
-    );
-    return filtered;
-  } catch (error: any) {
-    console.error("Error fetching products by category:", error);
-    return [];
+    };
+  } catch (error) {
+    console.error("Error fetching new arrivals:", error);
+    return { 
+      data: [], 
+      pagination: { 
+        currentPage: 1, 
+        totalPages: 1, 
+        totalProducts: 0, 
+        limit, 
+        hasNextPage: false, 
+        hasPrevPage: false 
+      } 
+    };
   }
 }
 
+// ===== PRODUCTS BY CATEGORY (UPDATED with pagination) =====
+export async function fetchProductsByCategory(
+  category: string,
+  page: number = 1,
+  limit: number = 20
+): Promise<PaginatedResponse<Product>> {
+  try {
+    console.log(`Fetching products for category: ${category} page ${page}`);
+
+    // Try the category endpoint
+    try {
+      const response = await axios.get(
+        `${API_BASE_URL}/api/products/category/${encodeURIComponent(category)}?page=${page}&limit=${limit}`,
+        { timeout: 10000 }
+      );
+      
+      const products = extractProducts(response.data.data || response.data);
+      const pagination = response.data.pagination || {
+        currentPage: page,
+        totalPages: 1,
+        totalProducts: products.length,
+        limit,
+        hasNextPage: false,
+        hasPrevPage: false
+      };
+      
+      return { data: products, pagination };
+    } catch (categoryError) {
+      console.log("Category endpoint failed, falling back to filtered fetch:", categoryError);
+    }
+
+    // Fallback: use filtered fetch
+    return await fetchAllProducts(page, limit, { category });
+  } catch (error: any) {
+    console.error("Error fetching products by category:", error);
+    return { data: [], pagination: { currentPage: 1, totalPages: 1, totalProducts: 0, limit, hasNextPage: false, hasPrevPage: false } };
+  }
+}
+
+// ===== GET PRODUCT BY ID (UPDATED) =====
 export async function getProductById(id: string): Promise<Product | null> {
   // Validate ID first
   if (!id || typeof id !== "string" || id.trim() === "" || id === "undefined") {
@@ -340,54 +452,13 @@ export async function getProductById(id: string): Promise<Product | null> {
       return null;
     }
 
-    // Check if response.data exists
     if (!response.data) {
       console.error("Empty response from product API");
       return null;
     }
 
-    // DEBUG: Log the actual response
-    console.log("Raw API response for product:", {
-      data: response.data,
-      type: typeof response.data,
-      isArray: Array.isArray(response.data),
-      keys: Object.keys(response.data || {}),
-    });
-
-    // Handle different response structures
     let productData: any = null;
 
-    // Check if it's the problematic partial object
-    if (response.data && typeof response.data === "object") {
-      const keys = Object.keys(response.data);
-
-      // If it's the partial object (size, stock, _id only)
-      if (
-        keys.length === 3 &&
-        keys.includes("size") &&
-        keys.includes("stock") &&
-        keys.includes("_id")
-      ) {
-        console.error("API returned partial object. This is a backend issue.");
-
-        // Try to fetch from all products as fallback
-        try {
-          const allProducts = await fetchAllProducts();
-          const fullProduct = allProducts.find((p) => p._id === id);
-
-          if (fullProduct) {
-            console.log("Found product via fallback method");
-            return normalizeProduct(fullProduct);
-          }
-        } catch (fallbackError) {
-          console.error("Fallback fetch failed:", fallbackError);
-        }
-
-        return null;
-      }
-    }
-
-    // Normal extraction logic
     if (Array.isArray(response.data) && response.data.length > 0) {
       productData = response.data[0];
     } else if (response.data.product) {
@@ -405,7 +476,6 @@ export async function getProductById(id: string): Promise<Product | null> {
       return null;
     }
 
-    // Final validation
     if (
       !productData._id ||
       !productData.title ||
@@ -419,114 +489,64 @@ export async function getProductById(id: string): Promise<Product | null> {
     console.log("Successfully fetched product:", product._id, product.title);
     return product;
   } catch (err: any) {
-    console.error("Error fetching product by ID:", {
-      message: err.message,
-      response: err.response?.data,
-      status: err.response?.status,
-      url: `${API_BASE_URL}/api/products/${id}`,
-    });
-
+    console.error("Error fetching product by ID:", err);
+    
     // Fallback: try to get from all products
-    if (err.response?.status !== 404) {
-      try {
-        console.log("Attempting fallback fetch for product:", id);
-        const allProducts = await fetchAllProducts();
-        const product = allProducts.find((p) => p._id === id);
-        return product ? normalizeProduct(product) : null;
-      } catch (fallbackError) {
-        console.error("Fallback also failed:", fallbackError);
-        return null;
-      }
-    }
-
-    return null;
-  }
-}
-
-// NEW FUNCTIONS FOR COLLECTIONS
-export async function fetchProductsForCollections(
-  limit: number = 100
-): Promise<Product[]> {
-  try {
-    console.log(
-      `Fetching products for collections from ${API_BASE_URL}/api/products`
-    );
-
-    // Try to get all products with comprehensive data
-    const response = await axios.get(`${API_BASE_URL}/api/products`, {
-      params: {
-        limit,
-        populate: "category,brand",
-        fields: "title,description,category,imageUrl,normalPrice,offerPrice,rating,isBestSelling,isNew,stock,brand,createdAt,sizes,colors,tags,keywords",
-      },
-      timeout: 15000,
-    });
-
-    const products = extractProducts(response.data);
-    console.log(
-      `Successfully fetched ${products.length} products for collections`
-    );
-    return products;
-  } catch (error: any) {
-    console.error("Error fetching products for collections:", error);
-    // Fallback to regular fetch
-    return fetchAllProducts();
-  }
-}
-
-export async function searchProducts(query: string): Promise<Product[]> {
-  if (!query || query.trim() === "") {
-    return fetchAllProducts();
-  }
-
-  try {
-    console.log(`Searching products for: "${query}"`);
-
-    // First try search endpoint
     try {
-      const response = await axios.get(`${API_BASE_URL}/api/products/search`, {
-        params: { q: query },
+      console.log("Attempting fallback fetch for product:", id);
+      const allProducts = await fetchAllProducts(1, 100);
+      const product = allProducts.data.find((p) => p._id === id);
+      return product ? normalizeProduct(product) : null;
+    } catch (fallbackError) {
+      console.error("Fallback also failed:", fallbackError);
+      return null;
+    }
+  }
+}
+
+// ===== SEARCH PRODUCTS (UPDATED with pagination) =====
+export async function searchProducts(
+  query: string,
+  page: number = 1,
+  limit: number = 20
+): Promise<PaginatedResponse<Product>> {
+  if (!query || query.trim() === "") {
+    return fetchAllProducts(page, limit);
+  }
+
+  try {
+    console.log(`Searching products for: "${query}" page ${page}`);
+
+    try {
+      const response = await axios.get(`${API_BASE_URL}/api/products`, {
+        params: { search: query, page, limit },
         timeout: 10000,
       });
 
-      const products = extractProducts(response.data);
-      console.log(
-        `Found ${products.length} products via search API for query: "${query}"`
-      );
-      return products;
+      const products = extractProducts(response.data.data || response.data);
+      const pagination = response.data.pagination || {
+        currentPage: page,
+        totalPages: 1,
+        totalProducts: products.length,
+        limit,
+        hasNextPage: false,
+        hasPrevPage: false
+      };
+
+      return { data: products, pagination };
     } catch (searchError) {
       console.log("Search endpoint failed, using regular endpoint:", searchError);
     }
 
-    // Fallback: fetch all and filter
-    const allProducts = await fetchAllProducts();
-    const queryLower = query.toLowerCase();
-    
-    const filtered = allProducts.filter((product) => {
-      const searchableFields = [
-        product.title || "",
-        product.description || "",
-        product.category || "",
-        product.brand || "",
-        ...(product.tags || []),
-        ...(product.keywords || []),
-      ];
-
-      return searchableFields.some((field) =>
-        field.toLowerCase().includes(queryLower)
-      );
-    });
-
-    console.log(
-      `Found ${filtered.length} products via client-side search for query: "${query}"`
-    );
-    return filtered;
+    // Fallback: use filtered fetch
+    return await fetchAllProducts(page, limit, { search: query });
   } catch (error: any) {
     console.error("Error searching products:", error);
-    return [];
+    return { data: [], pagination: { currentPage: 1, totalPages: 1, totalProducts: 0, limit, hasNextPage: false, hasPrevPage: false } };
   }
 }
 
+// ===== FETCH PRODUCT CATEGORIES =====
 export async function fetchProductCategories(): Promise<string[]> {
   try {
     console.log(`Fetching categories from ${API_BASE_URL}/api/products/categories`);
@@ -552,10 +572,10 @@ export async function fetchProductCategories(): Promise<string[]> {
     }
 
     // Fallback: extract categories from products
-    const products = await fetchAllProducts();
+    const products = await fetchAllProducts(1, 100);
     const categories = new Set<string>();
 
-    products.forEach((product) => {
+    products.data.forEach((product) => {
       if (product.category && typeof product.category === "string") {
         const trimmedCategory = product.category.trim();
         if (trimmedCategory) {
@@ -573,31 +593,90 @@ export async function fetchProductCategories(): Promise<string[]> {
   }
 }
 
-export async function fetchFeaturedProducts(): Promise<Product[]> {
+// ===== FETCH FEATURED PRODUCTS (UPDATED) =====
+export async function fetchFeaturedProducts(
+  page: number = 1,
+  limit: number = 20
+): Promise<PaginatedResponse<Product>> {
   try {
-    const products = await fetchAllProducts();
-    const featured = products
-      .filter((p) => p.featured || p.isBestSelling || p.isNew)
+    const result = await fetchAllProducts(1, 100);
+    const featured = result.data
+      .filter(p => p.featured === true)
       .sort((a, b) => {
-        // Sort by: featured > best selling > new > rating
         if (a.featured && !b.featured) return -1;
         if (!a.featured && b.featured) return 1;
-        if (a.isBestSelling && !b.isBestSelling) return -1;
-        if (!a.isBestSelling && b.isBestSelling) return 1;
-        if (a.isNew && !b.isNew) return -1;
-        if (!a.isNew && b.isNew) return 1;
         return (b.rating || 0) - (a.rating || 0);
-      })
-      .slice(0, 8);
+      });
 
-    console.log(`Found ${featured.length} featured products`);
-    return featured;
+    const startIndex = (page - 1) * limit;
+    const paginatedProducts = featured.slice(startIndex, startIndex + limit);
+    
+    return {
+      data: paginatedProducts,
+      pagination: {
+        currentPage: page,
+        totalPages: Math.ceil(featured.length / limit) || 1,
+        totalProducts: featured.length,
+        limit,
+        hasNextPage: page < Math.ceil(featured.length / limit),
+        hasPrevPage: page > 1
+      }
+    };
   } catch (error) {
     console.error("Error fetching featured products:", error);
+    return { data: [], pagination: { currentPage: 1, totalPages: 1, totalProducts: 0, limit, hasNextPage: false, hasPrevPage: false } };
+  }
+}
+
+// ===== FETCH DISCOUNTED PRODUCTS (UPDATED) =====
+export async function fetchDiscountedProducts(
+  page: number = 1,
+  limit: number = 20
+): Promise<PaginatedResponse<Product>> {
+  try {
+    const result = await fetchAllProducts(1, 100);
+    const discounted = result.data
+      .filter(p => p.offerPrice && p.offerPrice < p.normalPrice)
+      .sort((a, b) => {
+        const discountA = ((a.normalPrice - (a.offerPrice || a.normalPrice)) / a.normalPrice) * 100;
+        const discountB = ((b.normalPrice - (b.offerPrice || b.normalPrice)) / b.normalPrice) * 100;
+        return discountB - discountA;
+      });
+
+    const startIndex = (page - 1) * limit;
+    const paginatedProducts = discounted.slice(startIndex, startIndex + limit);
+    
+    return {
+      data: paginatedProducts,
+      pagination: {
+        currentPage: page,
+        totalPages: Math.ceil(discounted.length / limit) || 1,
+        totalProducts: discounted.length,
+        limit,
+        hasNextPage: page < Math.ceil(discounted.length / limit),
+        hasPrevPage: page > 1
+      }
+    };
+  } catch (error) {
+    console.error("Error fetching discounted products:", error);
+    return { data: [], pagination: { currentPage: 1, totalPages: 1, totalProducts: 0, limit, hasNextPage: false, hasPrevPage: false } };
+  }
+}
+
+// ===== FETCH PRODUCTS FOR COLLECTIONS =====
+export async function fetchProductsForCollections(
+  limit: number = 100
+): Promise<Product[]> {
+  try {
+    const result = await fetchAllProducts(1, limit);
+    return result.data;
+  } catch (error: any) {
+    console.error("Error fetching products for collections:", error);
     return [];
   }
 }
 
+// ===== FETCH PRODUCTS WITH FILTERS (UPDATED) =====
 export async function fetchProductsWithFilters(filters: {
   category?: string;
   minPrice?: number;
@@ -607,105 +686,19 @@ export async function fetchProductsWithFilters(filters: {
   limit?: number;
 }): Promise<Product[]> {
   try {
-    console.log(`Fetching products with filters:`, filters);
+    const result = await fetchAllProducts(1, filters.limit || 100, {
+      category: filters.category,
+      minPrice: filters.minPrice,
+      maxPrice: filters.maxPrice,
+      sortBy: filters.sortBy
+    });
 
-    const params: any = {};
-    if (filters.category && filters.category !== "all") {
-      params.category = filters.category;
-    }
-    if (filters.minPrice !== undefined) {
-      params.minPrice = filters.minPrice;
-    }
-    if (filters.maxPrice !== undefined) {
-      params.maxPrice = filters.maxPrice;
-    }
-    if (filters.minRating !== undefined) {
-      params.minRating = filters.minRating;
-    }
-    if (filters.sortBy) {
-      params.sortBy = filters.sortBy;
-    }
-    if (filters.limit) {
-      params.limit = filters.limit;
-    }
-
-    // Try filtered endpoint
-    try {
-      const response = await axios.get(`${API_BASE_URL}/api/products/filter`, {
-        params,
-        timeout: 10000,
-      });
-
-      const products = extractProducts(response.data);
-      console.log(
-        `Found ${products.length} products via filter API with params:`,
-        params
-      );
-      return products;
-    } catch (filterError) {
-      console.log("Filter endpoint failed, filtering client-side:", filterError);
-    }
-
-    // Fallback: fetch all and filter client-side
-    const allProducts = await fetchAllProducts();
-    let filtered = [...allProducts];
-
-    if (filters.category && filters.category !== "all") {
-      filtered = filtered.filter(
-        (p) => p.category?.toLowerCase() === filters.category?.toLowerCase()
-      );
-    }
-
-    if (filters.minPrice !== undefined) {
-      filtered = filtered.filter((p) => p.normalPrice >= filters.minPrice!);
-    }
-
-    if (filters.maxPrice !== undefined) {
-      filtered = filtered.filter((p) => p.normalPrice <= filters.maxPrice!);
-    }
+    let filtered = result.data;
 
     if (filters.minRating !== undefined) {
-      filtered = filtered.filter((p) => (p.rating || 0) >= filters.minRating!);
+      filtered = filtered.filter(p => (p.rating || 0) >= filters.minRating!);
     }
 
-    // Apply sorting
-    if (filters.sortBy) {
-      switch (filters.sortBy) {
-        case "price-low":
-          filtered.sort((a, b) => a.normalPrice - b.normalPrice);
-          break;
-        case "price-high":
-          filtered.sort((a, b) => b.normalPrice - a.normalPrice);
-          break;
-        case "rating":
-          filtered.sort((a, b) => (b.rating || 0) - (a.rating || 0));
-          break;
-        case "newest":
-          filtered.sort((a, b) => {
-            const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-            const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-            return dateB - dateA;
-          });
-          break;
-        case "featured":
-          filtered.sort((a, b) => {
-            if (a.featured && !b.featured) return -1;
-            if (!a.featured && b.featured) return 1;
-            if (a.isBestSelling && !b.isBestSelling) return -1;
-            if (!a.isBestSelling && b.isBestSelling) return 1;
-            return (b.rating || 0) - (a.rating || 0);
-          });
-          break;
-      }
-    }
-
-    if (filters.limit) {
-      filtered = filtered.slice(0, filters.limit);
-    }
-
-    console.log(
-      `Found ${filtered.length} products via client-side filtering`
-    );
     return filtered;
   } catch (error) {
     console.error("Error fetching products with filters:", error);
@@ -713,85 +706,34 @@ export async function fetchProductsWithFilters(filters: {
   }
 }
 
+// ===== FETCH PRODUCTS BY BRAND =====
 export async function fetchProductsByBrand(brand: string): Promise<Product[]> {
   try {
-    console.log(`Fetching products for brand: ${brand}`);
-
-    // Try brand endpoint
-    try {
-      const response = await axios.get(
-        `${API_BASE_URL}/api/products/brand/${encodeURIComponent(brand)}`,
-        { timeout: 10000 }
-      );
-
-      const products = extractProducts(response.data);
-      console.log(`Found ${products.length} products for brand "${brand}"`);
-      return products;
-    } catch (brandError) {
-      console.log("Brand endpoint failed, filtering client-side:", brandError);
-    }
-
-    // Fallback: fetch all and filter
-    const allProducts = await fetchAllProducts();
-    const filtered = allProducts.filter(
-      (p) => p.brand?.toLowerCase() === brand.toLowerCase()
-    );
-
-    console.log(
-      `Found ${filtered.length} products for brand "${brand}" via filtering`
-    );
-    return filtered;
+    const result = await fetchAllProducts(1, 100);
+    return result.data.filter(p => p.brand?.toLowerCase() === brand.toLowerCase());
   } catch (error) {
     console.error("Error fetching products by brand:", error);
     return [];
   }
 }
 
-export async function fetchDiscountedProducts(): Promise<Product[]> {
-  try {
-    const products = await fetchAllProducts();
-    const discounted = products
-      .filter((p) => p.offerPrice && p.offerPrice < p.normalPrice)
-      .sort((a, b) => {
-        const discountA =
-          ((a.normalPrice - (a.offerPrice || a.normalPrice)) / a.normalPrice) *
-          100;
-        const discountB =
-          ((b.normalPrice - (b.offerPrice || b.normalPrice)) / b.normalPrice) *
-          100;
-        return discountB - discountA; // Highest discount first
-      })
-      .slice(0, 12);
-
-    console.log(`Found ${discounted.length} discounted products`);
-    return discounted;
-  } catch (error) {
-    console.error("Error fetching discounted products:", error);
-    return [];
-  }
-}
-
+// ===== FETCH PRODUCTS BY TAGS =====
 export async function fetchProductsByTags(tags: string[]): Promise<Product[]> {
   try {
-    const products = await fetchAllProducts();
-    const filtered = products.filter((p) => {
+    const result = await fetchAllProducts(1, 100);
+    return result.data.filter(p => {
       if (!p.tags || !Array.isArray(p.tags)) return false;
-      return tags.some((tag) =>
-        p.tags!.some((productTag) =>
-          productTag.toLowerCase().includes(tag.toLowerCase())
-        )
-      );
+      return tags.some(tag => p.tags!.some(productTag => 
+        productTag.toLowerCase().includes(tag.toLowerCase())
+      ));
     });
-
-    console.log(`Found ${filtered.length} products with tags:`, tags);
-    return filtered;
   } catch (error) {
     console.error("Error fetching products by tags:", error);
     return [];
   }
 }
 
-// Statistics functions
+// ===== STATISTICS FUNCTIONS =====
 export async function getProductStatistics(): Promise<{
   totalProducts: number;
   categories: number;
@@ -801,7 +743,8 @@ export async function getProductStatistics(): Promise<{
   outOfStock: number;
 }> {
   try {
-    const products = await fetchAllProducts();
+    const result = await fetchAllProducts(1, 100);
+    const products = result.data;
 
     const uniqueCategories = new Set<string>();
     let outOfStockCount = 0;
@@ -822,7 +765,7 @@ export async function getProductStatistics(): Promise<{
     });
 
     const stats = {
-      totalProducts: products.length,
+      totalProducts: result.pagination.totalProducts,
       categories: uniqueCategories.size,
       bestSellers: products.filter((p) => p.isBestSelling).length,
       newArrivals: products.filter((p) => p.isNew).length,
@@ -845,6 +788,7 @@ export async function getProductStatistics(): Promise<{
   }
 }
 
+// ===== PRODUCT API EXPORT =====
 const productApi = {
   // Core functions
   fetchAllProducts,
@@ -876,9 +820,40 @@ export default productApi;
 // import { Product } from "@/types/product.types";
 // import axios from "axios";
 
-// const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
-// // const API_URL = process.env.NEXT_PUBLIC_API_URL;
+// // IMPORTANT: This function must NOT use window in any way
+// const getApiBaseUrl = (): string => {
+//   // Always check environment variable first
+//   const envUrl = process.env.NEXT_PUBLIC_API_URL;
+  
+//   if (envUrl) {
+//     // Ensure proper protocol
+//     if (envUrl.startsWith('http://') || envUrl.startsWith('https://')) {
+//       return envUrl;
+//     }
+    
+//     // Add protocol if missing
+//     if (process.env.NODE_ENV === 'production') {
+//       return `https://${envUrl}`;
+//     } else {
+//       return `http://${envUrl}`;
+//     }
+//   }
+  
+//   // Fallback based on NODE_ENV
+//   if (process.env.NODE_ENV === 'production') {
+//     return 'https://puti-client-production.onrender.com';
+//   }
+  
+//   // Default to localhost for development
+//   return 'http://localhost:4000';
+// };
 
+// const API_BASE_URL = getApiBaseUrl();
+// console.log('API Configuration:', { 
+//   NODE_ENV: process.env.NODE_ENV,
+//   API_BASE_URL,
+//   hasEnvVar: !!process.env.NEXT_PUBLIC_API_URL
+// });
 
 // // Helper to validate if an object is a valid Product
 // const isValidProduct = (item: any): item is Product => {
@@ -907,10 +882,8 @@ export default productApi;
 //     title: item.title || "Unknown Product",
 //     description: item.description || "",
 //     category: item.category || "Uncategorized",
-//     // Handle imageUrl - use salePrice from backend as offerPrice
 //     imageUrl: item.imageUrl || "/placeholder-product.png",
 //     normalPrice: typeof item.normalPrice === "number" ? item.normalPrice : 0,
-//     // Map backend fields to frontend fields
 //     originalPrice:
 //       typeof item.originalPrice === "number" ? item.originalPrice : undefined,
 //     offerPrice:
@@ -947,7 +920,6 @@ export default productApi;
 //     colors: Array.isArray(item.colors) ? item.colors : undefined,
 //     tags: Array.isArray(item.tags) ? item.tags : [],
 //     keywords: Array.isArray(item.keywords) ? item.keywords : [],
-//     // Add any other fields that might be needed
 //     ...(item.metadata || {}),
 //   };
 // };
@@ -1039,8 +1011,8 @@ export default productApi;
 // // Core API Functions
 // export async function fetchAllProducts(): Promise<Product[]> {
 //   try {
-//     console.log(`Fetching all products from ${API_URL}/api/products`);
-//     const response = await axios.get(`${API_URL}/api/products`, {
+//     console.log(`Fetching all products from ${API_BASE_URL}/api/products`);
+//     const response = await axios.get(`${API_BASE_URL}/api/products`, {
 //       timeout: 15000,
 //     });
 
@@ -1124,7 +1096,7 @@ export default productApi;
 //     // First try the category endpoint directly
 //     try {
 //       const response = await axios.get(
-//         `${API_URL}/api/products/category/${encodeURIComponent(category)}`,
+//         `${API_BASE_URL}/api/products/category/${encodeURIComponent(category)}`,
 //         { timeout: 10000 }
 //       );
 //       console.log("Category endpoint response:", {
@@ -1171,9 +1143,9 @@ export default productApi;
 //   }
 
 //   try {
-//     console.log(`Fetching product ${id} from ${API_URL}/api/products/${id}`);
+//     console.log(`Fetching product ${id} from ${API_BASE_URL}/api/products/${id}`);
 
-//     const response = await axios.get(`${API_URL}/api/products/${id}`, {
+//     const response = await axios.get(`${API_BASE_URL}/api/products/${id}`, {
 //       timeout: 10000,
 //       validateStatus: (status) => status < 500,
 //     });
@@ -1268,7 +1240,7 @@ export default productApi;
 //       message: err.message,
 //       response: err.response?.data,
 //       status: err.response?.status,
-//       url: `${API_URL}/api/products/${id}`,
+//       url: `${API_BASE_URL}/api/products/${id}`,
 //     });
 
 //     // Fallback: try to get from all products
@@ -1289,17 +1261,16 @@ export default productApi;
 // }
 
 // // NEW FUNCTIONS FOR COLLECTIONS
-
 // export async function fetchProductsForCollections(
 //   limit: number = 100
 // ): Promise<Product[]> {
 //   try {
 //     console.log(
-//       `Fetching products for collections from ${API_URL}/api/products`
+//       `Fetching products for collections from ${API_BASE_URL}/api/products`
 //     );
 
 //     // Try to get all products with comprehensive data
-//     const response = await axios.get(`${API_URL}/api/products`, {
+//     const response = await axios.get(`${API_BASE_URL}/api/products`, {
 //       params: {
 //         limit,
 //         populate: "category,brand",
@@ -1330,7 +1301,7 @@ export default productApi;
 
 //     // First try search endpoint
 //     try {
-//       const response = await axios.get(`${API_URL}/api/products/search`, {
+//       const response = await axios.get(`${API_BASE_URL}/api/products/search`, {
 //         params: { q: query },
 //         timeout: 10000,
 //       });
@@ -1375,11 +1346,11 @@ export default productApi;
 
 // export async function fetchProductCategories(): Promise<string[]> {
 //   try {
-//     console.log(`Fetching categories from ${API_URL}/api/products/categories`);
+//     console.log(`Fetching categories from ${API_BASE_URL}/api/products/categories`);
 
 //     // Try dedicated categories endpoint
 //     try {
-//       const response = await axios.get(`${API_URL}/api/products/categories`, {
+//       const response = await axios.get(`${API_BASE_URL}/api/products/categories`, {
 //         timeout: 5000,
 //       });
 
@@ -1477,7 +1448,7 @@ export default productApi;
 
 //     // Try filtered endpoint
 //     try {
-//       const response = await axios.get(`${API_URL}/api/products/filter`, {
+//       const response = await axios.get(`${API_BASE_URL}/api/products/filter`, {
 //         params,
 //         timeout: 10000,
 //       });
@@ -1566,7 +1537,7 @@ export default productApi;
 //     // Try brand endpoint
 //     try {
 //       const response = await axios.get(
-//         `${API_URL}/api/products/brand/${encodeURIComponent(brand)}`,
+//         `${API_BASE_URL}/api/products/brand/${encodeURIComponent(brand)}`,
 //         { timeout: 10000 }
 //       );
 
@@ -1715,4 +1686,5 @@ export default productApi;
 
 // export default productApi;
 
- 
+
+

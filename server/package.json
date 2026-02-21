@@ -7,7 +7,8 @@
     "start": "node dist/server.js",
     "dev": "ts-node src/server.ts",
     "type-install": "npm install --save-dev @types/node @types/cors @types/express @types/multer @types/bcryptjs @types/jsonwebtoken @types/mongoose",
-    "seed:admin": "ts-node src/createAdmin.ts"
+    "seed:admin": "ts-node src/createAdmin.ts",
+     "add-indexes": "ts-node src/scripts/add-indexes.ts"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

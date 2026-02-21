@@ -2008,7 +2008,7 @@ export default function ProductDetailPage() {
                 <div className="flex flex-col xs:flex-row xs:items-center gap-2 xs:gap-4 text-sm text-slate-500 mb-4">
                   {/* Custom Product Code from admin (sku field) */}
                   {product.sku && (
-                    <div className="flex items-center gap-2 bg-gradient-to-r from-amber-50 to-amber-100 px-3 py-1.5 rounded-lg border border-amber-200">
+                    <div className="flex items-center gap-2 bg-transparent px-3 py-1.5 rounded-lg ">
                       <Key size={14} className="text-amber-600" />
                       <span className="font-mono font-bold text-amber-700 truncate">
                         SKU: {product.sku} {/* Changed from "Code:" to "SKU:" */}
