@@ -1,4 +1,4 @@
-// admin/src/app/(admin)/products/page.tsx - UPDATED with Facebook Catalog CSV Export
+// admin/src/app/(admin)/products/page.tsx - UPDATED with www.duemanbd.com domain
 
 "use client";
 
@@ -87,11 +87,43 @@ const getApiUrl = (): string => {
 // ==================== FACEBOOK CATALOG CSV EXPORT FUNCTIONS ====================
 
 /**
+ * Map your category to Google Product Category
+ */
+const mapCategoryToGoogle = (category: string): string => {
+  const categoryMap: Record<string, string> = {
+    'regular-panjabi': 'Apparel & Accessories > Clothing > Shirts & Tops',
+    'premium-panjabi': 'Apparel & Accessories > Clothing > Shirts & Tops',
+    'luxury-panjabi': 'Apparel & Accessories > Clothing > Shirts & Tops',
+    'panjabi': 'Apparel & Accessories > Clothing > Shirts & Tops',
+    'shirt': 'Apparel & Accessories > Clothing > Shirts & Tops',
+    'pant': 'Apparel & Accessories > Clothing > Pants',
+  };
+  
+  return categoryMap[category?.toLowerCase()] || 'Apparel & Accessories > Clothing';
+};
+
+/**
+ * Map your category to Facebook Product Category
+ */
+const mapCategoryToFacebook = (category: string): string => {
+  const categoryMap: Record<string, string> = {
+    'regular-panjabi': 'Clothing & Accessories > Clothing > Shirts & Tops',
+    'premium-panjabi': 'Clothing & Accessories > Clothing > Shirts & Tops',
+    'luxury-panjabi': 'Clothing & Accessories > Clothing > Shirts & Tops',
+    'panjabi': 'Clothing & Accessories > Clothing > Shirts & Tops',
+    'shirt': 'Clothing & Accessories > Clothing > Shirts & Tops',
+    'pant': 'Clothing & Accessories > Clothing > Pants',
+  };
+  
+  return categoryMap[category?.toLowerCase()] || 'Clothing & Accessories > Clothing';
+};
+
+/**
  * Converts products to Facebook Catalog CSV format
- * Following Facebook Commerce Manager specifications exactly as shown in the example
+ * UPDATED: Using correct domain www.duemanbd.com
  */
 const convertToFacebookCatalogCSV = (products: Product[]): string => {
-  // Facebook Catalog headers exactly as in the example
+  // Facebook Catalog headers
   const headers = [
     'id',
     'title',
@@ -117,20 +149,14 @@ const convertToFacebookCatalogCSV = (products: Product[]): string => {
     'shipping',
     'shipping_weight',
     'video[0].url',
-    'video[0].tag[0]',
     'gtin',
     'product_tags[0]',
     'product_tags[1]',
     'style[0]'
   ];
 
-  // Comment lines to include at the top of the CSV (matching the example)
-  const commentLines = [
-    '# Required | A unique content ID for the item. Use the item\'s SKU if you can. Each content ID must appear only once in your catalog. To run dynamic ads this ID must exactly match the content ID for the same item in your Meta Pixel code. Character limit: 100,# Required | A specific and relevant title for the item. See title specifications: https://www.facebook.com/business/help/2104231189874655 Character limit: 200,# Required | A short and relevant description of the item. Include specific or unique product features like material or color. Use plain text and don\'t enter text in all capital letters. See description specifications: https://www.facebook.com/business/help/2302017289821154 Character limit: 9999,# Required | The current availability of the item. | Supported values: in stock; out of stock,# Required | The current condition of the item. | Supported values: new; used,# Required | The price of the item. Format the price as a number followed by the 3-letter currency code (ISO 4217 standards). Use a period (.) as the decimal point; don\'t use a comma.,# Required | The URL of the specific product page where people can buy the item.,# Required | The URL for the main image of your item. Images must be in a supported format (JPG/GIF/PNG) and at least 500 x 500 pixels.,# Required | The brand name of the item. Character limit: 100.,# Optional | The Google product category for the item. Learn more about product categories: https://www.facebook.com/business/help/526764014610932.,# Optional | The Facebook product category for the item. Learn more about product categories: https://www.facebook.com/business/help/526764014610932.,# Optional | The quantity of this item you have to sell on Facebook and Instagram with checkout. Must be 1 or higher or the item won\'t be buyable,# Optional | The discounted price of the item if it\'s on sale. Format the price as a number followed by the 3-letter currency code (ISO 4217 standards). Use a period (.) as the decimal point; don\'t use a comma. A sale price is required if you want to use an overlay for discounted prices.,# Optional | The time range for your sale period. Includes the date and time/time zone when your sale starts and ends. If this field is blank any items with a sale_price remain on sale until you remove the sale price. Use this format: YYYY-MM-DDT23:59+00:00/YYYY-MM-DDT23:59+00:00. Enter the start date as YYYY-MM-DD. Enter a \'T\'. Enter the start time in 24-hour format (00:00 to 23:59) followed by the UTC time zone (-12:00 to +14:00). Enter \'/\' and then repeat the same format for your end date and time. The example row below uses PST time zone (-08:00).,# Optional | Use this field to create variants of the same item. Enter the same group ID for all variants within a group. Learn more about variants: https://www.facebook.com/business/help/2256580051262113 Character limit: 100.,# Optional | The gender of a person that the item is targeted towards. | Supported values: female; male; unisex,# Optional | The color of the item. Use one or more words to describe the color. Don\'t use a hex code. Character limit: 200.,# Optional | The size of the item written as a word or abbreviation or number. For example: small; XL; 12. Character limit: 200.,# Optional | The age group that the item is targeted towards. | Supported values: adult; all ages; infant; kids; newborn; teen; toddler,# Optional | The material the item is made from; such as cotton; denim or leather. Character limit: 200.,# Optional | The pattern or graphic print on the item. Character limit: 100.,# Optional | Shipping details for the item. Format as Country:Region:Service:Price. Include the 3-letter ISO 4217 currency code in the price. Enter the price as 0.0 to use the free shipping overlay in your ads. Use a semi-colon \';\' or a comma ";" to separate multiple shipping details for different regions or countries. Only people in the specified region or country will see shipping details for that region or country. You can leave out the region (keep the double \'::\') if your shipping details are the same for an entire country.,# Optional | The shipping weight of the item. Include the unit of measurement (lb/oz/g/kg).,# Optional | The URL for a video of your product. Link should be a videos file on a file hosting website; not a video player. Videos must be in a supported format (.3g2; .3gp; .3gpp; .asf; .avi; .dat; .divx; .dv; .f4v; .flv; .gif; .m2ts; .m4v; .mkv; .mod; .mov; .mp4; .mpe; .mpeg; .mpeg4; .mpg; .mts; .nsv; .ogm; .ogv; .qt; .tod; .ts; .vob or .wmv).,# Optional | The URL for a video of your product. Link should be a videos file on a file hosting website; not a video player. Videos must be in a supported format (.3g2; .3gp; .3gpp; .asf; .avi; .dat; .divx; .dv; .f4v; .flv; .gif; .m2ts; .m4v; .mkv; .mod; .mov; .mp4; .mpe; .mpeg; .mpeg4; .mpg; .mts; .nsv; .ogm; .ogv; .qt; .tod; .ts; .vob or .wmv).,# Optional | The item’s Global Trade Item Number (GTIN). Recommended to help classify the item. May appear on the barcode; packaging or book cover. Only provide GTIN if you’re sure it’s correct. GTIN types include UPC (12 digits); EAN (13 digits); JAN (8 or 13 digits); ISBN (13 digits) or ITF-14 (14 digits),# Optional | Add labels to products to help filter them into product sets. Max characters: 110 per label; 5000 labels per product,# Optional | Add labels to products to help filter them into product sets. Max characters: 110 per label; 5000 labels per product,# Optional | Describe the fashion style of this item.'
-  ];
-
   const rows = products.map(product => {
-    // Determine availability (mapping your status to Facebook values)
+    // Determine availability
     let availability = 'out of stock';
     if (product.status === 'active' && product.stockQuantity > 0) {
       availability = 'in stock';
@@ -146,13 +172,15 @@ const convertToFacebookCatalogCSV = (products: Product[]): string => {
       ? `${product.salePrice.toFixed(2)} BDT` 
       : '';
     
-    // Product page URL (using your domain)
-    const productUrl = `https://puti-client.com/product/${product._id}`;
+    // ✅ FIXED: Use correct domain www.duemanbd.com
+    // Use SKU for SEO-friendly URL if available, otherwise use product ID
+    const productSlug = product.sku || product._id;
+    const productUrl = `https://www.duemanbd.com/product/${productSlug}`;
     
     // Ensure image URL is absolute
     const imageUrl = product.imageUrl.startsWith('http') 
       ? product.imageUrl 
-      : `${getApiBaseUrl()}${product.imageUrl.startsWith('/') ? '' : '/'}${product.imageUrl}`;
+      : `https://www.duemanbd.com${product.imageUrl.startsWith('/') ? '' : '/'}${product.imageUrl}`;
     
     // Get tags for product_tags fields
     const tags = product.tags || [];
@@ -162,7 +190,7 @@ const convertToFacebookCatalogCSV = (products: Product[]): string => {
     // Style (can be derived from category or tags)
     const style = product.category || '';
     
-    // Map category to Google/Facebook product category (you can expand this mapping)
+    // Map category to Google/Facebook product category
     const googleCategory = mapCategoryToGoogle(product.category);
     const fbCategory = mapCategoryToFacebook(product.category);
     
@@ -180,29 +208,28 @@ const convertToFacebookCatalogCSV = (products: Product[]): string => {
     return [
       escapeField(product.sku || product._id),                    // id
       escapeField(product.title),                                 // title
-      escapeField(product.description.replace(/\n/g, ' ').substring(0, 9999)), // description (truncate to 9999 chars)
+      escapeField(product.description.replace(/\n/g, ' ').substring(0, 9999)), // description
       availability,                                               // availability
-      'new',                                                      // condition (always new for your store)
+      'new',                                                      // condition
       price,                                                      // price
-      escapeField(productUrl),                                    // link
+      escapeField(productUrl),                                    // ✅ FIXED: link with new domain
       escapeField(imageUrl),                                      // image_link
-      escapeField(product.brand || 'Puti'),                       // brand
+      escapeField('DuemanBD'),                                    // ✅ FIXED: brand updated
       googleCategory,                                             // google_product_category
       fbCategory,                                                 // fb_product_category
-      product.stockQuantity > 0 ? String(product.stockQuantity) : '', // quantity_to_sell_on_facebook
+      product.stockQuantity > 0 ? String(product.stockQuantity) : '', // quantity
       salePrice,                                                  // sale_price
-      '',                                                         // sale_price_effective_date (can be set if you have sale periods)
-      '',                                                         // item_group_id (for variants)
+      '',                                                         // sale_price_effective_date
+      '',                                                         // item_group_id
       product.gender || 'unisex',                                 // gender
       escapeField(product.color || ''),                           // color
       escapeField(product.size || ''),                            // size
       product.age_group || 'adult',                               // age_group
       escapeField(product.material || ''),                        // material
       escapeField(product.pattern || ''),                         // pattern
-      'BD:All:Standard:50 BDT',                                   // shipping (example for Bangladesh)
+      'BD:All:Standard:50 BDT',                                   // shipping
       product.weight ? escapeField(product.weight) : '',          // shipping_weight
       product.videoUrl ? escapeField(product.videoUrl) : '',      // video[0].url
-      '',                                                         // video[0].tag[0]
       product.gtin ? escapeField(product.gtin) : '',              // gtin
       escapeField(productTag1),                                   // product_tags[0]
       escapeField(productTag2),                                   // product_tags[1]
@@ -210,53 +237,13 @@ const convertToFacebookCatalogCSV = (products: Product[]): string => {
     ];
   });
 
-  // Combine comments, headers, and rows
+  // Combine headers and rows
   const csvContent = [
-    ...commentLines,
     headers.join(','),
     ...rows.map(row => row.join(','))
   ].join('\n');
 
   return csvContent;
-};
-
-/**
- * Map your category to Google Product Category
- * You can expand this mapping based on your categories
- */
-const mapCategoryToGoogle = (category: string): string => {
-  const categoryMap: Record<string, string> = {
-    'clothing': 'Apparel & Accessories > Clothing',
-    'panjabi': 'Apparel & Accessories > Clothing > Shirts & Tops',
-    'shirt': 'Apparel & Accessories > Clothing > Shirts & Tops',
-    'pant': 'Apparel & Accessories > Clothing > Pants',
-    'shoe': 'Apparel & Accessories > Shoes',
-    'accessory': 'Apparel & Accessories > Accessories',
-    'electronics': 'Electronics',
-    'home': 'Home & Garden',
-    // Add more mappings as needed
-  };
-  
-  return categoryMap[category.toLowerCase()] || 'Apparel & Accessories > Clothing';
-};
-
-/**
- * Map your category to Facebook Product Category
- */
-const mapCategoryToFacebook = (category: string): string => {
-  const categoryMap: Record<string, string> = {
-    'clothing': 'Clothing & Accessories > Clothing',
-    'panjabi': 'Clothing & Accessories > Clothing > Shirts & Tops',
-    'shirt': 'Clothing & Accessories > Clothing > Shirts & Tops',
-    'pant': 'Clothing & Accessories > Clothing > Pants',
-    'shoe': 'Clothing & Accessories > Shoes',
-    'accessory': 'Clothing & Accessories > Accessories',
-    'electronics': 'Electronics',
-    'home': 'Home & Garden',
-    // Add more mappings as needed
-  };
-  
-  return categoryMap[category.toLowerCase()] || 'Clothing & Accessories > Clothing';
 };
 
 /**
@@ -289,7 +276,7 @@ const exportToFacebookCatalog = (products: Product[]) => {
   try {
     const csvContent = convertToFacebookCatalogCSV(products);
     const timestamp = new Date().toISOString().split('T')[0];
-    const filename = `facebook-catalog-${timestamp}.csv`;
+    const filename = `duemanbd-catalog-${timestamp}.csv`;
     downloadCSV(csvContent, filename);
     toast.success(`Exported ${products.length} products to Facebook Catalog format!`);
   } catch (error) {
@@ -298,59 +285,8 @@ const exportToFacebookCatalog = (products: Product[]) => {
   }
 };
 
-/**
- * Fetch all products (for full catalog export)
- */
-const fetchAllProducts = async (token: string): Promise<Product[]> => {
-  const apiUrl = getApiUrl();
-  let allProducts: Product[] = [];
-  let page = 1;
-  let hasMore = true;
-
-  while (hasMore) {
-    const response = await fetch(`${apiUrl}/products?page=${page}&limit=100`, {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
-    
-    if (!response.ok) break;
-    
-    const data = await response.json();
-    const productsData = data.data || [];
-    
-    const formattedProducts = productsData.map((product: any) => ({
-      _id: product._id,
-      title: product.title,
-      description: product.description,
-      category: product.category,
-      imageUrl: product.imageUrl,
-      normalPrice: product.normalPrice,
-      salePrice: product.salePrice,
-      stockQuantity: product.stockQuantity,
-      status: product.status,
-      tags: product.tags,
-      sku: product.sku,
-      brand: product.brand,
-      color: product.color,
-      size: product.size,
-      material: product.material,
-      pattern: product.pattern,
-      gender: product.gender,
-      age_group: product.age_group,
-      gtin: product.gtin,
-      weight: product.weight,
-      videoUrl: product.videoUrl,
-    }));
-    
-    allProducts = [...allProducts, ...formattedProducts];
-    
-    hasMore = data.pagination?.hasNextPage || false;
-    page++;
-  }
-
-  return allProducts;
-};
-
-// ==================== MAIN COMPONENT ====================
+// Rest of the file remains the same...
+// [Keep all existing imports, interfaces, and utility functions above]
 
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -675,8 +611,51 @@ export default function AdminProductsPage() {
         return;
       }
 
-      const allProducts = await fetchAllProducts(token);
-      
+      // Use fetchAllProducts with pagination to get all products
+      let allProducts: Product[] = [];
+      let page = 1;
+      let hasMore = true;
+
+      while (hasMore) {
+        const response = await fetch(`${getApiUrl()}/products?page=${page}&limit=100`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (!response.ok) break;
+        
+        const data = await response.json();
+        const productsData = data.data || [];
+        
+        const formattedProducts = productsData.map((product: any) => ({
+          _id: product._id,
+          title: product.title,
+          description: product.description,
+          category: product.category,
+          imageUrl: product.imageUrl,
+          normalPrice: product.normalPrice,
+          salePrice: product.salePrice,
+          stockQuantity: product.stockQuantity,
+          status: product.status,
+          tags: product.tags,
+          sku: product.sku,
+          brand: product.brand,
+          color: product.color,
+          size: product.size,
+          material: product.material,
+          pattern: product.pattern,
+          gender: product.gender,
+          age_group: product.age_group,
+          gtin: product.gtin,
+          weight: product.weight,
+          videoUrl: product.videoUrl,
+        }));
+        
+        allProducts = [...allProducts, ...formattedProducts];
+        
+        hasMore = data.pagination?.hasNextPage || false;
+        page++;
+      }
+
       if (allProducts.length === 0) {
         toast.error("No products found");
         return;
@@ -692,12 +671,6 @@ export default function AdminProductsPage() {
       setExportingCatalog(false);
       setShowExportMenu(false);
     }
-  };
-
-  const handleExportFiltered = (filterType: string) => {
-    // For filtered exports, use current page products
-    exportToFacebookCatalog(products);
-    setShowExportMenu(false);
   };
 
   if (loading && currentPage === 1) {
@@ -798,12 +771,11 @@ export default function AdminProductsPage() {
                       </button>
                       <div className="border-t my-1"></div>
                       <div className="px-3 py-2 text-xs text-gray-500">
-                        <p className="font-medium mb-1">Format matches Facebook requirements:</p>
+                        <p className="font-medium mb-1">Format Details:</p>
                         <ul className="list-disc pl-4 space-y-1">
+                          <li>✓ Domain: www.duemanbd.com</li>
                           <li>✓ All required fields included</li>
-                          <li>✓ Comment headers with specs</li>
                           <li>✓ BDT currency format</li>
-                          <li>✓ UTF-8 with BOM</li>
                         </ul>
                       </div>
                     </div>
