@@ -732,11 +732,11 @@ export default function OrderConfirmationPage() {
                 <div className="space-y-1">
                   <p className="text-sm font-medium text-amber-600 flex items-center gap-2">
                     <Phone className="w-4 h-4" />
-                    +880 1234 567890
+                    +8801914600880
                   </p>
                   <p className="text-sm font-medium text-amber-600 flex items-center gap-2">
                     <Mail className="w-4 h-4" />
-                    support@puti.com
+                    duemanbd@gmail.com
                   </p>
                 </div>
                 <button
