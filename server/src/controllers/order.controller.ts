@@ -181,15 +181,70 @@ const updateInventoryDirectly = async (orderId: string, oldStatus: string, newSt
   }
 };
 
+// server/src/controllers/order.controllers.ts - Update createOrder function
+
 export const createOrder = async (req: Request, res: Response) => {
   try {
     console.log('🛒 Creating new order...');
+    console.log('Request body:', JSON.stringify(req.body, null, 2));
     
     const result = await runTransaction(async () => {
-      const order = new Order(req.body);
+      // Validate required fields
+      if (!req.body.items || !Array.isArray(req.body.items) || req.body.items.length === 0) {
+        throw new Error('Order must contain at least one item');
+      }
+      
+      if (!req.body.shippingInfo) {
+        throw new Error('Shipping information is required');
+      }
+      
+      // Process each item to ensure all fields are present
+      const processedItems = req.body.items.map((item: any) => ({
+        productId: item.productId,
+        title: item.title || 'Product',
+        price: parseFloat(item.price) || 0,
+        image: item.image || '',
+        quantity: parseInt(item.quantity) || 1,
+        size: item.size || '',
+        color: item.color || '',
+        sku: item.sku || '',
+        normalPrice: parseFloat(item.normalPrice) || parseFloat(item.price) || 0,
+        originalPrice: parseFloat(item.originalPrice) || parseFloat(item.normalPrice) || parseFloat(item.price) || 0
+      }));
+      
+      const order = new Order({
+        shippingInfo: {
+          fullName: req.body.shippingInfo.fullName,
+          email: req.body.shippingInfo.email,
+          phone: req.body.shippingInfo.phone,
+          address: req.body.shippingInfo.address,
+          city: req.body.shippingInfo.city,
+          district: req.body.shippingInfo.district,
+          zipCode: req.body.shippingInfo.zipCode || '',
+          country: req.body.shippingInfo.country || 'Bangladesh',
+          deliveryInstructions: req.body.shippingInfo.deliveryInstructions || ''
+        },
+        items: processedItems,
+        subtotal: parseFloat(req.body.subtotal) || 0,
+        discountTotal: parseFloat(req.body.discountTotal) || 0,
+        shippingCharge: parseFloat(req.body.shippingCharge) || 0,
+        total: parseFloat(req.body.total) || 0,
+        paymentMethod: req.body.paymentMethod || 'cod',
+        paymentStatus: req.body.paymentStatus || 'pending',
+        status: req.body.status || 'pending',
+        deliveryType: req.body.deliveryType || 'outside',
+        estimatedDelivery: req.body.estimatedDelivery || '',
+        notes: req.body.notes || ''
+      });
       
       console.log(`Order Number: ${order.orderNumber || 'Pending'}`);
       console.log(`Items: ${order.items.length}`);
+      console.log(`Item details:`, order.items.map(item => ({
+        title: item.title,
+        size: item.size,
+        price: item.price,
+        quantity: item.quantity
+      })));
       
       // Reserve stock for all items
       for (const item of order.items) {
@@ -264,6 +319,8 @@ export const createOrder = async (req: Request, res: Response) => {
   }
 };
 
+// server/src/controllers/order.controllers.ts - Update getOrders function
+
 export const getOrders = async (req: Request, res: Response) => {
   try {
     const {
@@ -299,9 +356,30 @@ export const getOrders = async (req: Request, res: Response) => {
     sort[sortBy as string] = sortOrder === "desc" ? -1 : 1;
 
     const [orders, total] = await Promise.all([
-      Order.find(query).sort(sort).skip(skip).limit(limitNum),
+      Order.find(query)
+        .sort(sort)
+        .skip(skip)
+        .limit(limitNum)
+        .lean(), // Use lean() for better performance
       Order.countDocuments(query),
     ]);
+
+    // Ensure all order items have the necessary fields
+    const processedOrders = orders.map(order => ({
+      ...order,
+      items: order.items.map(item => ({
+        ...item,
+        // Ensure these fields exist for the admin panel
+        name: item.title,
+        productName: item.title,
+        sku: item.sku || '',
+        size: item.size || '',
+        color: item.color || '',
+        price: item.price || 0,
+        quantity: item.quantity || 1,
+        image: item.image || ''
+      }))
+    }));
 
     // Get stats
     const stats = {
@@ -337,7 +415,7 @@ export const getOrders = async (req: Request, res: Response) => {
 
     res.json({
       success: true,
-      data: orders,
+      data: processedOrders,
       pagination: {
         page: pageNum,
         limit: limitNum,
@@ -347,6 +425,7 @@ export const getOrders = async (req: Request, res: Response) => {
       stats,
     });
   } catch (error: any) {
+    console.error('❌ Get orders error:', error);
     res.status(500).json({
       success: false,
       error: error.message,

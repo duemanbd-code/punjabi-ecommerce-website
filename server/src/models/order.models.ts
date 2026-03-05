@@ -10,6 +10,9 @@ export interface IOrderItem {
   quantity: number;
   size?: string;
   color?: string;
+  sku?: string; // Add SKU field
+  normalPrice?: number; // Original price before discount
+  originalPrice?: number; // Original price for reference
 }
 
 export interface IShippingInfo {
@@ -49,8 +52,11 @@ const orderItemSchema = new Schema<IOrderItem>({
   price: { type: Number, required: true },
   image: { type: String, required: true },
   quantity: { type: Number, required: true, min: 1 },
-  size: String,
-  color: String
+  size: { type: String, default: '' },
+  color: { type: String, default: '' },
+  sku: { type: String, default: '' }, // Add SKU field
+  normalPrice: { type: Number, default: 0 }, // Original price before discount
+  originalPrice: { type: Number, default: 0 } // Original price for reference
 });
 
 const shippingInfoSchema = new Schema<IShippingInfo>({
@@ -60,9 +66,9 @@ const shippingInfoSchema = new Schema<IShippingInfo>({
   address: { type: String, required: true },
   city: { type: String, required: true },
   district: { type: String, required: true },
-  zipCode: String,
+  zipCode: { type: String, default: '' },
   country: { type: String, default: 'Bangladesh' },
-  deliveryInstructions: String
+  deliveryInstructions: { type: String, default: '' }
 });
 
 const orderSchema = new Schema<IOrder>({
@@ -100,8 +106,8 @@ const orderSchema = new Schema<IOrder>({
     required: true 
   },
   estimatedDelivery: { type: String, required: true },
-  notes: String,
-  trackingNumber: { type: String, index: true }
+  notes: { type: String, default: '' },
+  trackingNumber: { type: String, default: '', index: true }
 }, {
   timestamps: true
 });
@@ -110,7 +116,7 @@ const orderSchema = new Schema<IOrder>({
 orderSchema.pre('save', function(next) {
   if (!this.orderNumber) {
     const timestamp = Date.now().toString().slice(-8);
-    const random = Math.random().toString(36).substr(2, 4).toUpperCase();
+    const random = Math.random().toString(36).substring(2, 6).toUpperCase();
     this.orderNumber = `ORD-${timestamp}-${random}`;
   }
   next();

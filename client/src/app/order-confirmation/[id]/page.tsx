@@ -127,42 +127,60 @@ export default function OrderConfirmationPage() {
     }
   }, [loading, order, params.id]);
 
-  const fetchOrder = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch(`${API_URL}/api/orders/${params.id}`);
-      
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: Failed to fetch order`);
-      }
-      
-      const data = await response.json();
-      
-      if (data.success && data.data) {
-        const orderData = data.data;
-        setOrder(orderData);
-        
-        // Send purchase event only once
-        sendPurchaseEvent(orderData);
-        
-      } else {
-        setError(data.error || "Failed to fetch order");
-      }
-    } catch (error: any) {
-      console.error("Error fetching order:", error);
-      setError("Failed to load order details. Please try again.");
-      
-      // Push error event
-      pushGTMEvent({
-        event: "order_error",
-        error_type: "fetch_failed",
-        error_message: error.message,
-        order_id: params.id,
-      });
-    } finally {
-      setLoading(false);
+// client/src/app/order-confirmation/[id]/page.tsx
+
+// Update the fetchOrder function to properly process order data
+const fetchOrder = async () => {
+  try {
+    setLoading(true);
+    const response = await fetch(`${API_URL}/api/orders/${params.id}`);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: Failed to fetch order`);
     }
-  };
+    
+    const data = await response.json();
+    
+    if (data.success && data.data) {
+      const orderData = data.data;
+      
+      // Ensure all items have proper fields
+      const processedOrderData = {
+        ...orderData,
+        items: orderData.items.map((item: any) => ({
+          ...item,
+          // Ensure these fields exist
+          productId: item.productId || item.id || item._id,
+          title: item.title || item.name || 'Product',
+          price: item.price || 0,
+          quantity: item.quantity || 1,
+          image: item.image || item.imageUrl || '',
+          // Add size and color if available
+          size: item.size || item.selectedSize || '',
+          color: item.color || item.selectedColor || '',
+          // Add SKU if available
+          sku: item.sku || '',
+          // Original prices for discount calculation
+          normalPrice: item.normalPrice || item.price || 0,
+          originalPrice: item.originalPrice || item.normalPrice || item.price || 0
+        }))
+      };
+      
+      setOrder(processedOrderData);
+      
+      // Send purchase event only once
+      sendPurchaseEvent(processedOrderData);
+      
+    } else {
+      setError(data.error || "Failed to fetch order");
+    }
+  } catch (error: any) {
+    console.error("Error fetching order:", error);
+    setError("Failed to load order details. Please try again.");
+  } finally {
+    setLoading(false);
+  }
+};
 
   const sendPurchaseEvent = (orderData: Order) => {
     // Check if purchase event has already been sent for this order

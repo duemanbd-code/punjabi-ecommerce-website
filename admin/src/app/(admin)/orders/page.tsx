@@ -44,7 +44,31 @@ export default function OrdersPage() {
       });
 
       if (data.success) {
-        setOrders(data.data);
+        // Process orders to ensure all fields are present
+        const processedOrders = data.data.map((order: Order) => ({
+          ...order,
+          // Ensure total is a number
+          total: Number(order.total) || 0,
+          deliveryCharge: Number(order.deliveryCharge) || 0,
+          // Process items to ensure all fields
+          items: order.items.map((item: any) => ({
+            ...item,
+            title: item.title || item.name || 'Product',
+            name: item.title || item.name || 'Product',
+            price: Number(item.price) || 0,
+            quantity: Number(item.quantity) || 1,
+            sku: item.sku || '',
+            size: item.size || '',
+            color: item.color || '',
+            image: item.image || item.imageUrl || '',
+            variant: item.variant || {
+              size: item.size || '',
+              color: item.color || ''
+            }
+          }))
+        }));
+        
+        setOrders(processedOrders);
         setStats(data.stats);
         setTotalOrders(data.pagination?.total || data.data.length);
         setTotalPages(data.pagination?.pages || 1);
@@ -124,7 +148,7 @@ export default function OrdersPage() {
       'City',
       'District',
       'Order Date',
-      'Items Count',
+      'Items',
       'Total Amount',
       'Delivery Charge',
       'Grand Total',
@@ -143,12 +167,12 @@ export default function OrdersPage() {
       `"${order.shippingInfo.city}"`,
       `"${order.shippingInfo.district}"`,
       `"${formatDate(order.createdAt)}"`,
-      order.items.length,
-      order.total,
-      order.deliveryCharge,
-      order.total + order.deliveryCharge,
+      `"${order.items.map(item => `${item.quantity}x ${item.title}${item.size ? ` (${item.size})` : ''}`).join('; ')}"`,
+      order.total || 0,
+      order.deliveryCharge || 0,
+      (order.total || 0) + (order.deliveryCharge || 0),
       order.status,
-      order.paymentMethod || '',
+      order.paymentMethod || 'COD',
       order.paymentStatus,
       order.deliveryType
     ]);
@@ -157,11 +181,13 @@ export default function OrdersPage() {
   };
 
   const formatCurrency = (amount: number) => {
+    // Handle NaN or undefined
+    const safeAmount = Number(amount) || 0;
     return new Intl.NumberFormat('en-BD', {
       style: 'currency',
       currency: 'BDT',
       minimumFractionDigits: 0
-    }).format(amount);
+    }).format(safeAmount);
   };
 
   const formatDate = (dateString: string) => {
@@ -465,12 +491,14 @@ export default function OrdersPage() {
                             {order.items.length} item
                             {order.items.length !== 1 ? 's' : ''}
                           </div>
-                          <div className="text-xs text-gray-500">
-                            {order.items.reduce(
-                              (sum, item) => sum + item.quantity,
-                              0
-                            )}{' '}
-                            units
+                          <div className="text-xs text-gray-500 mt-1 max-w-[250px]">
+                            {order.items.map((item, idx) => (
+                              <div key={idx} className="truncate mb-1">
+                                <span className="font-medium">{item.quantity}x</span> {item.title}
+                                {item.size && <span className="text-amber-600 ml-1">({item.size})</span>}
+                                {item.sku && <span className="text-gray-400 ml-1">SKU: {item.sku}</span>}
+                              </div>
+                            ))}
                           </div>
                         </td>
                         <td className="py-3 px-4">
@@ -647,8 +675,8 @@ export default function OrdersPage() {
                       ['District', selectedOrder.shippingInfo.district],
                       ['Total', formatCurrency(selectedOrder.total)],
                       ['Delivery', formatCurrency(selectedOrder.deliveryCharge)],
-                      ['Grand Total', formatCurrency(selectedOrder.total + selectedOrder.deliveryCharge)],
-                      ['Payment Method', selectedOrder.paymentMethod || 'N/A'],
+                      ['Grand Total', formatCurrency((selectedOrder.total || 0) + (selectedOrder.deliveryCharge || 0))],
+                      ['Payment Method', selectedOrder.paymentMethod || 'COD'],
                       ['Payment Status', selectedOrder.paymentStatus],
                       ['Delivery Type', selectedOrder.deliveryType === 'dhaka' ? 'Inside Dhaka' : 'Outside Dhaka'],
                     ].map(row => row.join(',')).join('\n');
@@ -727,24 +755,46 @@ export default function OrdersPage() {
                       {selectedOrder.items.map((item, index) => (
                         <div key={index} className="flex items-center justify-between p-4 bg-white rounded-lg border border-gray-200">
                           <div className="flex items-center gap-4">
-                            <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center">
-                              <Package size={24} className="text-gray-400" />
+                            <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
+                              {item.image ? (
+                                <img 
+                                  src={item.image} 
+                                  alt={item.title}
+                                  className="w-full h-full object-cover"
+                                  onError={(e) => {
+                                    e.currentTarget.src = 'https://via.placeholder.com/64';
+                                  }}
+                                />
+                              ) : (
+                                <Package size={24} className="text-gray-400" />
+                              )}
                             </div>
                             <div>
-                              <p className="font-medium text-gray-900">{item.name}</p>
-                              {item.variant && (
-                                <p className="text-sm text-gray-600">
-                                  {item.variant.size && `Size: ${item.variant.size} `}
-                                  {item.variant.color && `Color: ${item.variant.color}`}
-                                </p>
-                              )}
+                              <p className="font-medium text-gray-900">{item.title}</p>
+                              <div className="flex flex-wrap gap-2 mt-1">
+                                {item.sku && (
+                                  <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">
+                                    SKU: {item.sku}
+                                  </span>
+                                )}
+                                {item.size && (
+                                  <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded">
+                                    Size: {item.size}
+                                  </span>
+                                )}
+                                {item.color && (
+                                  <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">
+                                    Color: {item.color}
+                                  </span>
+                                )}
+                              </div>
                             </div>
                           </div>
                           <div className="text-right">
                             <p className="font-medium text-gray-900">{formatCurrency(item.price)}</p>
                             <p className="text-sm text-gray-600">Qty: {item.quantity}</p>
                             <p className="text-sm font-medium text-gray-900">
-                              Total: {formatCurrency(item.price * item.quantity)}
+                              Total: {formatCurrency((item.price || 0) * (item.quantity || 1))}
                             </p>
                           </div>
                         </div>
@@ -764,12 +814,12 @@ export default function OrdersPage() {
                       </div>
                       <div className="flex justify-between text-gray-600">
                         <span>Delivery Charge</span>
-                        <span>{formatCurrency(selectedOrder.deliveryCharge)}</span>
+                        <span>{formatCurrency(selectedOrder.deliveryCharge || 0)}</span>
                       </div>
                       <div className="border-t border-gray-200 pt-3">
                         <div className="flex justify-between font-bold text-lg text-gray-900">
                           <span>Total Amount</span>
-                          <span>{formatCurrency(selectedOrder.total + selectedOrder.deliveryCharge)}</span>
+                          <span>{formatCurrency((selectedOrder.total || 0) + (selectedOrder.deliveryCharge || 0))}</span>
                         </div>
                       </div>
                     </div>

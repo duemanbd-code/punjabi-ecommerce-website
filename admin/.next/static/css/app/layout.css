@@ -879,6 +879,9 @@ video {
 .max-w-md {
   max-width: 28rem;
 }
+.max-w-\[250px\] {
+  max-width: 250px;
+}
 .flex-1 {
   flex: 1 1 0%;
 }
@@ -1874,6 +1877,10 @@ video {
 .text-white {
   --tw-text-opacity: 1;
   color: rgb(255 255 255 / var(--tw-text-opacity, 1));
+}
+.text-blue-700 {
+  --tw-text-opacity: 1;
+  color: rgb(29 78 216 / var(--tw-text-opacity, 1));
 }
 .line-through {
   text-decoration-line: line-through;
