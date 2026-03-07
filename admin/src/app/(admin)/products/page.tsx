@@ -120,7 +120,8 @@ const mapCategoryToFacebook = (category: string): string => {
 
 /**
  * Converts products to Facebook Catalog CSV format
- * UPDATED: Using correct domain www.duemanbd.com
+ * FINAL VERSION: Using MongoDB ID for URLs as requested by client
+ * URL format: https://www.duemanbd.com/product/69971acccfc0cd3a58f40203
  */
 const convertToFacebookCatalogCSV = (products: Product[]): string => {
   // Facebook Catalog headers
@@ -172,10 +173,9 @@ const convertToFacebookCatalogCSV = (products: Product[]): string => {
       ? `${product.salePrice.toFixed(2)} BDT` 
       : '';
     
-    // ✅ FIXED: Use correct domain www.duemanbd.com
-    // Use SKU for SEO-friendly URL if available, otherwise use product ID
-    const productSlug = product.sku || product._id;
-    const productUrl = `https://www.duemanbd.com/product/${productSlug}`;
+    // ✅ CRITICAL FIX: Use MongoDB ID for product URL (as requested by client)
+    // This ensures URLs match exactly what's on the website
+    const productUrl = `https://www.duemanbd.com/product/${product._id}`;
     
     // Ensure image URL is absolute
     const imageUrl = product.imageUrl.startsWith('http') 
@@ -206,15 +206,15 @@ const convertToFacebookCatalogCSV = (products: Product[]): string => {
     };
 
     return [
-      escapeField(product.sku || product._id),                    // id
+      escapeField(product._id),                                   // id - Use MongoDB ID
       escapeField(product.title),                                 // title
       escapeField(product.description.replace(/\n/g, ' ').substring(0, 9999)), // description
       availability,                                               // availability
       'new',                                                      // condition
       price,                                                      // price
-      escapeField(productUrl),                                    // ✅ FIXED: link with new domain
+      escapeField(productUrl),                                    // ✅ FIXED: link with MongoDB ID
       escapeField(imageUrl),                                      // image_link
-      escapeField('DuemanBD'),                                    // ✅ FIXED: brand updated
+      escapeField(product.brand || 'DuemanBD'),                   // brand - Use product brand if available
       googleCategory,                                             // google_product_category
       fbCategory,                                                 // fb_product_category
       product.stockQuantity > 0 ? String(product.stockQuantity) : '', // quantity
@@ -279,14 +279,17 @@ const exportToFacebookCatalog = (products: Product[]) => {
     const filename = `duemanbd-catalog-${timestamp}.csv`;
     downloadCSV(csvContent, filename);
     toast.success(`Exported ${products.length} products to Facebook Catalog format!`);
+    
+    // Log sample URL for verification
+    const sampleProduct = products[0];
+    console.log('Sample product URL:', `https://www.duemanbd.com/product/${sampleProduct._id}`);
   } catch (error) {
     console.error('Error exporting Facebook catalog CSV:', error);
     toast.error('Failed to export Facebook catalog');
   }
 };
 
-// Rest of the file remains the same...
-// [Keep all existing imports, interfaces, and utility functions above]
+// ==================== MAIN COMPONENT ====================
 
 export default function AdminProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -571,30 +574,6 @@ export default function AdminProductsPage() {
     fetchProducts(currentPage);
   };
 
-  const handleExportAll = () => {
-    // For export all, we need to fetch all products first
-    toast.loading("Preparing export...");
-    const apiUrl = getApiUrl();
-    const token = getAuthToken();
-    
-    fetch(`${apiUrl}/products?limit=1000`, {
-      headers: { 'Authorization': `Bearer ${token}` }
-    })
-      .then(res => res.json())
-      .then(data => {
-        const allProducts = data.data || [];
-        exportToFacebookCatalog(allProducts);
-        toast.dismiss();
-      })
-      .catch(err => {
-        console.error("Export error:", err);
-        toast.error("Failed to export all products");
-        toast.dismiss();
-      });
-    
-    setShowExportMenu(false);
-  };
-
   const handleExportCurrentPage = () => {
     exportToFacebookCatalog(products);
     setShowExportMenu(false);
@@ -611,7 +590,7 @@ export default function AdminProductsPage() {
         return;
       }
 
-      // Use fetchAllProducts with pagination to get all products
+      // Fetch all products with pagination
       let allProducts: Product[] = [];
       let page = 1;
       let hasMore = true;
@@ -728,7 +707,7 @@ export default function AdminProductsPage() {
                 )}
               </button>
               
-              {/* Export Button */}
+              {/* Export Button for Facebook Catalog */}
               <div className="export-menu relative">
                 <button
                   onClick={() => setShowExportMenu(!showExportMenu)}
@@ -750,7 +729,7 @@ export default function AdminProductsPage() {
                 </button>
                 
                 {showExportMenu && !exportingCatalog && (
-                  <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+                  <div className="absolute right-0 mt-2 w-72 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
                     <div className="p-2">
                       <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
                         Facebook Catalog Export
@@ -771,11 +750,12 @@ export default function AdminProductsPage() {
                       </button>
                       <div className="border-t my-1"></div>
                       <div className="px-3 py-2 text-xs text-gray-500">
-                        <p className="font-medium mb-1">Format Details:</p>
+                        <p className="font-medium mb-1 text-blue-600">✓ Using MongoDB ID URLs:</p>
                         <ul className="list-disc pl-4 space-y-1">
-                          <li>✓ Domain: www.duemanbd.com</li>
-                          <li>✓ All required fields included</li>
-                          <li>✓ BDT currency format</li>
+                          <li>Format: https://www.duemanbd.com/product/ID</li>
+                          <li>Example: https://www.duemanbd.com/product/69971acccfc0cd3a58f40203</li>
+                          <li>All required Facebook fields included</li>
+                          <li>BDT currency format</li>
                         </ul>
                       </div>
                     </div>

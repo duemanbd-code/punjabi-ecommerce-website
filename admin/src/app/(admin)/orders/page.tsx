@@ -44,29 +44,91 @@ export default function OrdersPage() {
       });
 
       if (data.success) {
-        // Process orders to ensure all fields are present
-        const processedOrders = data.data.map((order: Order) => ({
-          ...order,
-          // Ensure total is a number
-          total: Number(order.total) || 0,
-          deliveryCharge: Number(order.deliveryCharge) || 0,
-          // Process items to ensure all fields
-          items: order.items.map((item: any) => ({
-            ...item,
-            title: item.title || item.name || 'Product',
-            name: item.title || item.name || 'Product',
-            price: Number(item.price) || 0,
-            quantity: Number(item.quantity) || 1,
-            sku: item.sku || '',
-            size: item.size || '',
-            color: item.color || '',
-            image: item.image || item.imageUrl || '',
-            variant: item.variant || {
-              size: item.size || '',
-              color: item.color || ''
-            }
+        // ✅ FIXED: Better processing of order items to ensure SKU and image are preserved
+        const processedOrders = data.data.map((order: Order) => {
+          // Log the raw order data for debugging
+          console.log('Raw order data:', {
+            orderNumber: order.orderNumber,
+            items: order.items.map(item => ({
+              title: item.title,
+              sku: item.sku,
+              image: item.image ? 'has image' : 'no image',
+              size: item.size,
+              color: item.color
+            }))
+          });
+
+          return {
+            ...order,
+            // Ensure total is a number
+            total: Number(order.total) || 0,
+            deliveryCharge: Number(order.deliveryCharge) || 0,
+            // ✅ CRITICAL FIX: Process items to preserve ALL fields
+            items: order.items.map((item: any) => {
+              // Create a clean item object with all possible fields
+              const processedItem = {
+                // Core fields
+                _id: item._id || '',
+                productId: item.productId || item._id || '',
+                
+                // Title/Name fields
+                title: item.title || item.name || 'Product',
+                name: item.title || item.name || 'Product',
+                productName: item.title || item.name || 'Product',
+                
+                // ✅ SKU - try all possible sources
+                sku: item.sku || item.productSku || '',
+                
+                // Price fields
+                price: Number(item.price) || 0,
+                normalPrice: Number(item.normalPrice) || Number(item.price) || 0,
+                originalPrice: Number(item.originalPrice) || Number(item.normalPrice) || Number(item.price) || 0,
+                
+                // Quantity
+                quantity: Number(item.quantity) || 1,
+                
+                // ✅ Image - try all possible sources
+                image: item.image || item.imageUrl || item.thumbnail || '',
+                imageUrl: item.image || item.imageUrl || item.thumbnail || '',
+                thumbnail: item.image || item.imageUrl || item.thumbnail || '',
+                
+                // Variant fields
+                size: item.size || item.variant?.size || '',
+                color: item.color || item.variant?.color || '',
+                variant: item.variant || {
+                  size: item.size || '',
+                  color: item.color || ''
+                },
+                
+                // Category
+                category: item.category || '',
+                
+                // Additional fields that might be useful
+                createdAt: item.createdAt,
+                updatedAt: item.updatedAt
+              };
+
+              // Log processed item for debugging
+              console.log('Processed item:', {
+                title: processedItem.title,
+                sku: processedItem.sku,
+                hasImage: !!processedItem.image,
+                size: processedItem.size
+              });
+
+              return processedItem;
+            })
+          };
+        });
+        
+        console.log('Final processed orders:', processedOrders.map(o => ({
+          orderNumber: o.orderNumber,
+          items: o.items.map(i => ({
+            title: i.title,
+            sku: i.sku,
+            hasImage: !!i.image
           }))
-        }));
+        })));
         
         setOrders(processedOrders);
         setStats(data.stats);
@@ -148,7 +210,7 @@ export default function OrdersPage() {
       'City',
       'District',
       'Order Date',
-      'Items',
+      'Items (with SKU)',
       'Total Amount',
       'Delivery Charge',
       'Grand Total',
@@ -167,7 +229,7 @@ export default function OrdersPage() {
       `"${order.shippingInfo.city}"`,
       `"${order.shippingInfo.district}"`,
       `"${formatDate(order.createdAt)}"`,
-      `"${order.items.map(item => `${item.quantity}x ${item.title}${item.size ? ` (${item.size})` : ''}`).join('; ')}"`,
+      `"${order.items.map(item => `${item.quantity}x ${item.title} (SKU: ${item.sku || 'N/A'})${item.size ? ` Size: ${item.size}` : ''}`).join('; ')}"`,
       order.total || 0,
       order.deliveryCharge || 0,
       (order.total || 0) + (order.deliveryCharge || 0),
@@ -255,6 +317,14 @@ export default function OrdersPage() {
   const closeOrderModal = () => {
     setShowOrderModal(false);
     setSelectedOrder(null);
+  };
+
+  // ✅ FIXED: Helper function to get product image URL with fallback
+  const getProductImageUrl = (item: any): string => {
+    return item.image || 
+           item.imageUrl || 
+           item.thumbnail || 
+           `https://via.placeholder.com/64/FFE4E6/991B1B?text=${encodeURIComponent(item.title?.substring(0, 2) || 'PD')}`;
   };
 
   if (loading && orders.length === 0) {
@@ -639,7 +709,7 @@ export default function OrdersPage() {
         </main>
       </div>
 
-      {/* Order Details Modal */}
+      {/* ✅ FIXED: Order Details Modal with proper image and SKU display */}
       {showOrderModal && selectedOrder && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
@@ -663,7 +733,7 @@ export default function OrdersPage() {
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => {
-                    // Generate and download order as PDF/CSV
+                    // Generate and download order as CSV
                     const orderCsv = [
                       ['Order Number', selectedOrder.orderNumber],
                       ['Date', formatDateTime(selectedOrder.createdAt)],
@@ -745,60 +815,94 @@ export default function OrdersPage() {
                     </div>
                   </div>
 
-                  {/* Order Items */}
+                  {/* ✅ FIXED: Order Items with proper image and SKU display */}
                   <div className="bg-gray-50 rounded-xl p-6 border border-gray-200">
                     <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                       <ShoppingBag size={20} />
                       Order Items ({selectedOrder.items.length})
                     </h3>
                     <div className="space-y-4">
-                      {selectedOrder.items.map((item, index) => (
-                        <div key={index} className="flex items-center justify-between p-4 bg-white rounded-lg border border-gray-200">
-                          <div className="flex items-center gap-4">
-                            <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
-                              {item.image ? (
-                                <img 
-                                  src={item.image} 
-                                  alt={item.title}
-                                  className="w-full h-full object-cover"
-                                  onError={(e) => {
-                                    e.currentTarget.src = 'https://via.placeholder.com/64';
-                                  }}
-                                />
-                              ) : (
-                                <Package size={24} className="text-gray-400" />
-                              )}
-                            </div>
-                            <div>
-                              <p className="font-medium text-gray-900">{item.title}</p>
-                              <div className="flex flex-wrap gap-2 mt-1">
-                                {item.sku && (
-                                  <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">
-                                    SKU: {item.sku}
-                                  </span>
+                      {selectedOrder.items.map((item, index) => {
+                        // Log each item to debug
+                        console.log('Rendering order item:', {
+                          title: item.title,
+                          sku: item.sku,
+                          image: item.image,
+                          size: item.size
+                        });
+
+                        return (
+                          <div key={index} className="flex items-center justify-between p-4 bg-white rounded-lg border border-gray-200 hover:shadow-sm transition-shadow">
+                            <div className="flex items-center gap-4">
+                              {/* ✅ FIXED: Product Image with better fallback */}
+                              <div className="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden border border-gray-200">
+                                {item.image ? (
+                                  <img 
+                                    src={item.image} 
+                                    alt={item.title}
+                                    className="w-full h-full object-cover"
+                                    onError={(e) => {
+                                      console.log('Image failed to load:', item.image);
+                                      e.currentTarget.src = `https://via.placeholder.com/64/FFE4E6/991B1B?text=${encodeURIComponent(item.title?.substring(0, 2) || 'PD')}`;
+                                    }}
+                                  />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
+                                    <Package size={24} className="text-gray-400" />
+                                  </div>
                                 )}
-                                {item.size && (
-                                  <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded">
-                                    Size: {item.size}
-                                  </span>
-                                )}
-                                {item.color && (
-                                  <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">
-                                    Color: {item.color}
-                                  </span>
+                              </div>
+                              
+                              {/* ✅ FIXED: Product Details with SKU */}
+                              <div>
+                                <p className="font-medium text-gray-900">{item.title}</p>
+                                <div className="flex flex-wrap items-center gap-2 mt-1">
+                                  {/* ✅ FIXED: SKU display with better debugging */}
+                                  {item.sku ? (
+                                    <span className="text-xs bg-gray-100 text-gray-700 px-2 py-0.5 rounded flex items-center gap-1">
+                                      <span className="font-medium">SKU:</span> {item.sku}
+                                    </span>
+                                  ) : (
+                                    <span className="text-xs bg-gray-100 text-gray-400 px-2 py-0.5 rounded">
+                                      SKU: N/A
+                                    </span>
+                                  )}
+                                  
+                                  {/* Size */}
+                                  {item.size && (
+                                    <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded flex items-center gap-1">
+                                      <span className="font-medium">Size:</span> {item.size}
+                                    </span>
+                                  )}
+                                  
+                                  {/* Color */}
+                                  {item.color && (
+                                    <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded flex items-center gap-1">
+                                      <span className="font-medium">Color:</span> {item.color}
+                                    </span>
+                                  )}
+                                </div>
+                                
+                                {/* Product ID for reference */}
+                                {item.productId && (
+                                  <div className="text-xs text-gray-400 mt-1">
+                                    ID: {item.productId.substring(0, 8)}...
+                                  </div>
                                 )}
                               </div>
                             </div>
+                            
+                            {/* Price and Quantity */}
+                            <div className="text-right">
+                              <p className="font-medium text-gray-900">{formatCurrency(item.price)}</p>
+                              <p className="text-sm text-gray-600">Qty: {item.quantity}</p>
+                              <p className="text-sm font-medium text-gray-900 mt-1">
+                                Total: {formatCurrency((item.price || 0) * (item.quantity || 1))}
+                              </p>
+                            </div>
                           </div>
-                          <div className="text-right">
-                            <p className="font-medium text-gray-900">{formatCurrency(item.price)}</p>
-                            <p className="text-sm text-gray-600">Qty: {item.quantity}</p>
-                            <p className="text-sm font-medium text-gray-900">
-                              Total: {formatCurrency((item.price || 0) * (item.quantity || 1))}
-                            </p>
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 </div>
