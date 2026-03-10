@@ -1,6 +1,4 @@
-// admin/src/app/(admin)/products/page.tsx - UPDATED with www.duemanbd.com domain
-
-// admin/src/app/(admin)/products/page.tsx - UPDATED with fixes for all products and discount prices
+// admin/src/app/(admin)/products/page.tsx - UPDATED with SINGLE EXPORT for ALL 30 products
 
 "use client";
 
@@ -284,36 +282,110 @@ const downloadCSV = (csvContent: string, filename: string) => {
 };
 
 /**
- * Export products to Facebook Catalog CSV
+ * Export ALL products to Facebook Catalog CSV
+ * This function now fetches ALL products from ALL pages
  */
-const exportToFacebookCatalog = (products: Product[]) => {
-  if (products.length === 0) {
-    toast.error('No products to export');
-    return;
-  }
-
+const exportAllProductsToFacebookCatalog = async (token: string, totalProducts: number, setExporting: (loading: boolean) => void) => {
   try {
-    const csvContent = convertToFacebookCatalogCSV(products);
+    setExporting(true);
+    const loadingToast = toast.loading(`Fetching all ${totalProducts} products from database...`);
+    
+    // Fetch ALL products with pagination - this ensures we get all 30 products
+    let allProducts: Product[] = [];
+    let page = 1;
+    let hasMore = true;
+    const limit = 100; // Fetch 100 at a time to minimize requests
+
+    console.log(`Starting full catalog export - fetching all products...`);
+
+    while (hasMore) {
+      console.log(`Fetching page ${page} with limit ${limit}...`);
+      
+      const response = await fetch(`${getApiUrl()}/products?page=${page}&limit=${limit}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch page ${page}: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      const productsData = data.data || [];
+      
+      console.log(`Page ${page}: received ${productsData.length} products`);
+      
+      const formattedProducts = productsData.map((product: any) => ({
+        _id: product._id,
+        title: product.title,
+        description: product.description,
+        category: product.category,
+        imageUrl: product.imageUrl,
+        normalPrice: product.normalPrice || product.price || 0,
+        salePrice: product.salePrice || product.discountedPrice,
+        originalPrice: product.originalPrice,
+        stockQuantity: product.stockQuantity || 0,
+        status: product.status,
+        tags: product.tags,
+        brand: product.brand,
+        color: product.color,
+        size: product.size,
+        material: product.material,
+        pattern: product.pattern,
+        gender: product.gender,
+        age_group: product.age_group,
+        gtin: product.gtin,
+        weight: product.weight,
+        videoUrl: product.videoUrl,
+      }));
+      
+      allProducts = [...allProducts, ...formattedProducts];
+      
+      hasMore = data.pagination?.hasNextPage || false;
+      page++;
+    }
+
+    // Dismiss loading toast
+    toast.dismiss(loadingToast);
+
+    if (allProducts.length === 0) {
+      toast.error("No products found");
+      return;
+    }
+
+    console.log(`✅ Full catalog export complete: ${allProducts.length} products fetched`);
+    
+    // Count discounted products for reporting
+    const discountedCount = allProducts.filter(p => 
+      (p.salePrice && p.salePrice < p.normalPrice) || 
+      (p.originalPrice && p.originalPrice > p.normalPrice)
+    ).length;
+    
+    console.log(`Found ${discountedCount} products with discounts`);
+    
+    // Convert to CSV and download
+    const csvContent = convertToFacebookCatalogCSV(allProducts);
     const timestamp = new Date().toISOString().split('T')[0];
-    const filename = `duemanbd-catalog-${timestamp}.csv`;
+    const filename = `duemanbd-full-catalog-${timestamp}.csv`;
     downloadCSV(csvContent, filename);
     
     // Show success message with counts
-    const discountedCount = products.filter(p => p.salePrice && p.salePrice < p.normalPrice).length;
     toast.success(
       <div>
-        <p className="font-bold">Exported {products.length} products to Facebook Catalog!</p>
+        <p className="font-bold">✅ Exported ALL {allProducts.length} products!</p>
         <p className="text-sm mt-1">{discountedCount} products have discount prices</p>
+        <p className="text-xs mt-1">Ready for Facebook advertising</p>
       </div>
     );
     
     // Log sample URL for verification
-    const sampleProduct = products[0];
+    const sampleProduct = allProducts[0];
     console.log('Sample product URL:', `https://www.duemanbd.com/product/${sampleProduct._id}`);
-    console.log(`Export complete: ${products.length} products total, ${discountedCount} with discounts`);
+    
   } catch (error) {
-    console.error('Error exporting Facebook catalog CSV:', error);
-    toast.error('Failed to export Facebook catalog');
+    console.error("Error exporting full catalog:", error);
+    toast.error(`Failed to export catalog: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  } finally {
+    setExporting(false);
   }
 };
 
@@ -327,7 +399,6 @@ export default function AdminProductsPage() {
   const [viewingProduct, setViewingProduct] = useState<Product | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  const [showExportMenu, setShowExportMenu] = useState(false);
   
   // Pagination state
   const [pagination, setPagination] = useState<PaginationInfo>({
@@ -351,17 +422,6 @@ export default function AdminProductsPage() {
     window.addEventListener("resize", checkMobile);
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
-
-  // Close export menu when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (showExportMenu && !(event.target as Element).closest('.export-menu')) {
-        setShowExportMenu(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showExportMenu]);
 
   // Check authentication on mount
   useEffect(() => {
@@ -604,104 +664,16 @@ export default function AdminProductsPage() {
     fetchProducts(currentPage);
   };
 
-  const handleExportCurrentPage = () => {
-    exportToFacebookCatalog(products);
-    setShowExportMenu(false);
-  };
-
-  const handleExportFullCatalog = async () => {
-    try {
-      setExportingCatalog(true);
-      const loadingToast = toast.loading("Fetching all products from database...");
-      
-      const token = getAuthToken();
-      if (!token) {
-        toast.error("Not authenticated");
-        return;
-      }
-
-      // Fetch ALL products with pagination - this ensures we get all 30 products
-      let allProducts: Product[] = [];
-      let page = 1;
-      let hasMore = true;
-      const limit = 100; // Fetch 100 at a time to minimize requests
-
-      console.log(`Starting full catalog export - fetching all products...`);
-
-      while (hasMore) {
-        console.log(`Fetching page ${page} with limit ${limit}...`);
-        
-        const response = await fetch(`${getApiUrl()}/products?page=${page}&limit=${limit}`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        
-        if (!response.ok) {
-          throw new Error(`Failed to fetch page ${page}: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        const productsData = data.data || [];
-        
-        console.log(`Page ${page}: received ${productsData.length} products`);
-        
-        const formattedProducts = productsData.map((product: any) => ({
-          _id: product._id,
-          title: product.title,
-          description: product.description,
-          category: product.category,
-          imageUrl: product.imageUrl,
-          normalPrice: product.normalPrice || product.price || 0,
-          salePrice: product.salePrice || product.discountedPrice,
-          originalPrice: product.originalPrice,
-          stockQuantity: product.stockQuantity || 0,
-          status: product.status,
-          tags: product.tags,
-          brand: product.brand,
-          color: product.color,
-          size: product.size,
-          material: product.material,
-          pattern: product.pattern,
-          gender: product.gender,
-          age_group: product.age_group,
-          gtin: product.gtin,
-          weight: product.weight,
-          videoUrl: product.videoUrl,
-        }));
-        
-        allProducts = [...allProducts, ...formattedProducts];
-        
-        hasMore = data.pagination?.hasNextPage || false;
-        page++;
-      }
-
-      // Dismiss loading toast
-      toast.dismiss(loadingToast);
-
-      if (allProducts.length === 0) {
-        toast.error("No products found");
-        return;
-      }
-
-      console.log(`✅ Full catalog export complete: ${allProducts.length} products fetched`);
-      
-      // Count discounted products for reporting
-      const discountedCount = allProducts.filter(p => 
-        (p.salePrice && p.salePrice < p.normalPrice) || 
-        (p.originalPrice && p.originalPrice > p.normalPrice)
-      ).length;
-      
-      console.log(`Found ${discountedCount} products with discounts`);
-      
-      // Export all products
-      exportToFacebookCatalog(allProducts);
-      
-    } catch (error) {
-      console.error("Error exporting full catalog:", error);
-      toast.error(`Failed to export full catalog: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    } finally {
-      setExportingCatalog(false);
-      setShowExportMenu(false);
+  // SINGLE EXPORT FUNCTION - Always exports ALL products
+  const handleExportCatalog = async () => {
+    const token = getAuthToken();
+    if (!token) {
+      toast.error("Not authenticated");
+      router.push("/login");
+      return;
     }
+    
+    await exportAllProductsToFacebookCatalog(token, pagination.totalProducts, setExportingCatalog);
   };
 
   if (loading && currentPage === 1) {
@@ -759,62 +731,30 @@ export default function AdminProductsPage() {
                 )}
               </button>
               
-              {/* Export Button for Facebook Catalog */}
-              <div className="export-menu relative">
-                <button
-                  onClick={() => setShowExportMenu(!showExportMenu)}
-                  disabled={exportingCatalog}
-                  className="px-4 py-2 sm:px-6 sm:py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg hover:from-blue-600 hover:to-blue-700 font-medium shadow-sm flex items-center justify-center gap-2 flex-1 sm:flex-none"
-                >
-                  {exportingCatalog ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      <span>Exporting...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Facebook className="w-4 h-4" />
-                      <span className="hidden sm:inline">Facebook Catalog</span>
-                      <span className="sm:hidden">Catalog</span>
-                    </>
-                  )}
-                </button>
-                
-                {showExportMenu && !exportingCatalog && (
-                  <div className="absolute right-0 mt-2 w-72 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
-                    <div className="p-2">
-                      <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                        Facebook Catalog Export
-                      </div>
-                      <button
-                        onClick={handleExportCurrentPage}
-                        className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md"
-                      >
-                        <Download className="w-4 h-4" />
-                        <span>Export Current Page ({products.length} products)</span>
-                      </button>
-                      <button
-                        onClick={handleExportFullCatalog}
-                        className="w-full flex items-center gap-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-md"
-                      >
-                        <FileDown className="w-4 h-4" />
-                        <span>Export Full Catalog ({pagination.totalProducts} products)</span>
-                      </button>
-                      <div className="border-t my-1"></div>
-                      <div className="px-3 py-2 text-xs text-gray-500">
-                        <p className="font-medium mb-1 text-blue-600">✓ Using MongoDB ID URLs:</p>
-                        <ul className="list-disc pl-4 space-y-1">
-                          <li>Format: https://www.duemanbd.com/product/ID</li>
-                          <li>Example: https://www.duemanbd.com/product/69971acccfc0cd3a58f40203</li>
-                          <li>All {pagination.totalProducts} products will be exported</li>
-                          <li>Discount prices are included in sale_price field</li>
-                          <li>BDT currency format</li>
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
+              {/* SINGLE EXPORT BUTTON - Exports ALL 30 products */}
+              <button
+                onClick={handleExportCatalog}
+                disabled={exportingCatalog}
+                className="px-4 py-2 sm:px-6 sm:py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-700 hover:to-green-800 font-medium shadow-sm flex items-center justify-center gap-2 flex-1 sm:flex-none"
+                title="Exports ALL products for Facebook advertising"
+              >
+                {exportingCatalog ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    <span>Exporting {pagination.totalProducts} products...</span>
+                  </>
+                ) : (
+                  <>
+                    <Facebook className="w-4 h-4" />
+                    <Download className="w-4 h-4" />
+                    <span className="hidden sm:inline">Export Facebook Catalog</span>
+                    <span className="sm:hidden">Export</span>
+                    <span className="ml-1 text-xs bg-white text-green-700 px-1.5 py-0.5 rounded-full">
+                      {pagination.totalProducts}
+                    </span>
+                  </>
                 )}
-              </div>
+              </button>
               
               <button
                 onClick={() => router.push("/products/add")}
