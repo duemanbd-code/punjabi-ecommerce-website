@@ -1,5 +1,7 @@
 // admin/src/app/(admin)/products/page.tsx - UPDATED with www.duemanbd.com domain
 
+// admin/src/app/(admin)/products/page.tsx - UPDATED with fixes for all products and discount prices
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -122,8 +124,15 @@ const mapCategoryToFacebook = (category: string): string => {
  * Converts products to Facebook Catalog CSV format
  * FINAL VERSION: Using MongoDB ID for URLs as requested by client
  * URL format: https://www.duemanbd.com/product/69971acccfc0cd3a58f40203
+ * FIXED: Ensures sale_price is properly populated for discounted products
  */
 const convertToFacebookCatalogCSV = (products: Product[]): string => {
+  console.log(`Converting ${products.length} products to Facebook Catalog CSV format`);
+  
+  // Count products with discounts for logging
+  const discountedProducts = products.filter(p => p.salePrice && p.salePrice < p.normalPrice);
+  console.log(`Found ${discountedProducts.length} products with discounts/sale prices`);
+  
   // Facebook Catalog headers
   const headers = [
     'id',
@@ -168,10 +177,20 @@ const convertToFacebookCatalogCSV = (products: Product[]): string => {
     // Format price with currency (using BDT for Bangladeshi Taka)
     const price = `${product.normalPrice.toFixed(2)} BDT`;
     
-    // Format sale price if exists
-    const salePrice = product.salePrice && product.salePrice < product.normalPrice 
-      ? `${product.salePrice.toFixed(2)} BDT` 
-      : '';
+    // FIXED: Properly handle sale price for discounted products
+    // Check both salePrice field and also check if there's a discount (originalPrice > normalPrice)
+    let salePrice = '';
+    
+    // Case 1: Explicit salePrice field exists and is less than normalPrice
+    if (product.salePrice && product.salePrice < product.normalPrice) {
+      salePrice = `${product.salePrice.toFixed(2)} BDT`;
+      console.log(`Product ${product._id} - ${product.title}: Using salePrice ${product.salePrice} (discounted from ${product.normalPrice})`);
+    }
+    // Case 2: Check if originalPrice exists and is different from normalPrice (legacy format)
+    else if (product.originalPrice && product.originalPrice > product.normalPrice) {
+      salePrice = `${product.normalPrice.toFixed(2)} BDT`;
+      console.log(`Product ${product._id} - ${product.title}: Using originalPrice format - sale price ${product.normalPrice} (was ${product.originalPrice})`);
+    }
     
     // ✅ CRITICAL FIX: Use MongoDB ID for product URL (as requested by client)
     // This ensures URLs match exactly what's on the website
@@ -218,7 +237,7 @@ const convertToFacebookCatalogCSV = (products: Product[]): string => {
       googleCategory,                                             // google_product_category
       fbCategory,                                                 // fb_product_category
       product.stockQuantity > 0 ? String(product.stockQuantity) : '', // quantity
-      salePrice,                                                  // sale_price
+      salePrice,                                                  // ✅ FIXED: sale_price now properly populated for discounted products
       '',                                                         // sale_price_effective_date
       '',                                                         // item_group_id
       product.gender || 'unisex',                                 // gender
@@ -278,11 +297,20 @@ const exportToFacebookCatalog = (products: Product[]) => {
     const timestamp = new Date().toISOString().split('T')[0];
     const filename = `duemanbd-catalog-${timestamp}.csv`;
     downloadCSV(csvContent, filename);
-    toast.success(`Exported ${products.length} products to Facebook Catalog format!`);
+    
+    // Show success message with counts
+    const discountedCount = products.filter(p => p.salePrice && p.salePrice < p.normalPrice).length;
+    toast.success(
+      <div>
+        <p className="font-bold">Exported {products.length} products to Facebook Catalog!</p>
+        <p className="text-sm mt-1">{discountedCount} products have discount prices</p>
+      </div>
+    );
     
     // Log sample URL for verification
     const sampleProduct = products[0];
     console.log('Sample product URL:', `https://www.duemanbd.com/product/${sampleProduct._id}`);
+    console.log(`Export complete: ${products.length} products total, ${discountedCount} with discounts`);
   } catch (error) {
     console.error('Error exporting Facebook catalog CSV:', error);
     toast.error('Failed to export Facebook catalog');
@@ -417,6 +445,8 @@ export default function AdminProductsPage() {
       }));
 
       console.log(`✅ Loaded ${formattedProducts.length} products (page ${paginationData.currentPage} of ${paginationData.totalPages})`);
+      console.log(`Total products in database: ${paginationData.totalProducts}`);
+      
       setProducts(formattedProducts);
       setPagination(paginationData);
       setCurrentPage(paginationData.currentPage);
@@ -582,7 +612,7 @@ export default function AdminProductsPage() {
   const handleExportFullCatalog = async () => {
     try {
       setExportingCatalog(true);
-      toast.loading("Fetching all products for catalog export...");
+      const loadingToast = toast.loading("Fetching all products from database...");
       
       const token = getAuthToken();
       if (!token) {
@@ -590,20 +620,29 @@ export default function AdminProductsPage() {
         return;
       }
 
-      // Fetch all products with pagination
+      // Fetch ALL products with pagination - this ensures we get all 30 products
       let allProducts: Product[] = [];
       let page = 1;
       let hasMore = true;
+      const limit = 100; // Fetch 100 at a time to minimize requests
+
+      console.log(`Starting full catalog export - fetching all products...`);
 
       while (hasMore) {
-        const response = await fetch(`${getApiUrl()}/products?page=${page}&limit=100`, {
+        console.log(`Fetching page ${page} with limit ${limit}...`);
+        
+        const response = await fetch(`${getApiUrl()}/products?page=${page}&limit=${limit}`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         
-        if (!response.ok) break;
+        if (!response.ok) {
+          throw new Error(`Failed to fetch page ${page}: ${response.status}`);
+        }
         
         const data = await response.json();
         const productsData = data.data || [];
+        
+        console.log(`Page ${page}: received ${productsData.length} products`);
         
         const formattedProducts = productsData.map((product: any) => ({
           _id: product._id,
@@ -611,12 +650,12 @@ export default function AdminProductsPage() {
           description: product.description,
           category: product.category,
           imageUrl: product.imageUrl,
-          normalPrice: product.normalPrice,
-          salePrice: product.salePrice,
-          stockQuantity: product.stockQuantity,
+          normalPrice: product.normalPrice || product.price || 0,
+          salePrice: product.salePrice || product.discountedPrice,
+          originalPrice: product.originalPrice,
+          stockQuantity: product.stockQuantity || 0,
           status: product.status,
           tags: product.tags,
-          sku: product.sku,
           brand: product.brand,
           color: product.color,
           size: product.size,
@@ -635,17 +674,30 @@ export default function AdminProductsPage() {
         page++;
       }
 
+      // Dismiss loading toast
+      toast.dismiss(loadingToast);
+
       if (allProducts.length === 0) {
         toast.error("No products found");
         return;
       }
 
+      console.log(`✅ Full catalog export complete: ${allProducts.length} products fetched`);
+      
+      // Count discounted products for reporting
+      const discountedCount = allProducts.filter(p => 
+        (p.salePrice && p.salePrice < p.normalPrice) || 
+        (p.originalPrice && p.originalPrice > p.normalPrice)
+      ).length;
+      
+      console.log(`Found ${discountedCount} products with discounts`);
+      
+      // Export all products
       exportToFacebookCatalog(allProducts);
-      toast.dismiss();
-      toast.success(`Exported ${allProducts.length} products to Facebook Catalog`);
+      
     } catch (error) {
       console.error("Error exporting full catalog:", error);
-      toast.error("Failed to export full catalog");
+      toast.error(`Failed to export full catalog: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setExportingCatalog(false);
       setShowExportMenu(false);
@@ -679,7 +731,7 @@ export default function AdminProductsPage() {
                 Products Management
               </h1>
               <p className="text-gray-600 mt-1 text-sm sm:text-base">
-                Page {pagination.currentPage} of {pagination.totalPages} • {pagination.totalProducts} total products
+                Page {pagination.currentPage} of {pagination.totalPages} • {pagination.totalProducts} total products in database
               </p>
               <p className="text-gray-400 text-xs mt-1">
                 Backend: {getApiBaseUrl()}
@@ -754,7 +806,8 @@ export default function AdminProductsPage() {
                         <ul className="list-disc pl-4 space-y-1">
                           <li>Format: https://www.duemanbd.com/product/ID</li>
                           <li>Example: https://www.duemanbd.com/product/69971acccfc0cd3a58f40203</li>
-                          <li>All required Facebook fields included</li>
+                          <li>All {pagination.totalProducts} products will be exported</li>
+                          <li>Discount prices are included in sale_price field</li>
                           <li>BDT currency format</li>
                         </ul>
                       </div>
@@ -848,7 +901,7 @@ export default function AdminProductsPage() {
           {pagination.totalPages > 1 && (
             <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="text-sm text-gray-600">
-                Showing page {pagination.currentPage} of {pagination.totalPages} • {pagination.totalProducts} total products
+                Showing page {pagination.currentPage} of {pagination.totalPages} • {pagination.totalProducts} total products in database
               </div>
               <div className="flex items-center gap-2">
                 <button
