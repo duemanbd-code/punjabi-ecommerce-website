@@ -1,5 +1,7 @@
 // admin/src/app/(admin)/products/page.tsx - UPDATED with SINGLE EXPORT for ALL 30 products
 
+// admin/src/app/(admin)/products/page.tsx - FIXED DISCOUNT PRICE ISSUE
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -128,7 +130,14 @@ const convertToFacebookCatalogCSV = (products: Product[]): string => {
   console.log(`Converting ${products.length} products to Facebook Catalog CSV format`);
   
   // Count products with discounts for logging
-  const discountedProducts = products.filter(p => p.salePrice && p.salePrice < p.normalPrice);
+  const discountedProducts = products.filter(p => {
+    const hasDiscount = p.salePrice && p.salePrice < p.normalPrice;
+    if (hasDiscount) {
+      console.log(`✅ DISCOUNT FOUND: ${p.title} - Normal: ${p.normalPrice}, Sale: ${p.salePrice}`);
+    }
+    return hasDiscount;
+  });
+  
   console.log(`Found ${discountedProducts.length} products with discounts/sale prices`);
   
   // Facebook Catalog headers
@@ -180,14 +189,18 @@ const convertToFacebookCatalogCSV = (products: Product[]): string => {
     let salePrice = '';
     
     // Case 1: Explicit salePrice field exists and is less than normalPrice
-    if (product.salePrice && product.salePrice < product.normalPrice) {
-      salePrice = `${product.salePrice.toFixed(2)} BDT`;
-      console.log(`Product ${product._id} - ${product.title}: Using salePrice ${product.salePrice} (discounted from ${product.normalPrice})`);
+    if (product.salePrice !== undefined && product.salePrice !== null) {
+      if (product.salePrice < product.normalPrice) {
+        salePrice = `${product.salePrice.toFixed(2)} BDT`;
+        console.log(`✅ Product ${product._id} - ${product.title}: Using salePrice ${product.salePrice} (discounted from ${product.normalPrice})`);
+      } else {
+        console.log(`⚠️ Product ${product._id} - ${product.title}: salePrice ${product.salePrice} is NOT less than normalPrice ${product.normalPrice}`);
+      }
     }
     // Case 2: Check if originalPrice exists and is different from normalPrice (legacy format)
     else if (product.originalPrice && product.originalPrice > product.normalPrice) {
       salePrice = `${product.normalPrice.toFixed(2)} BDT`;
-      console.log(`Product ${product._id} - ${product.title}: Using originalPrice format - sale price ${product.normalPrice} (was ${product.originalPrice})`);
+      console.log(`✅ Product ${product._id} - ${product.title}: Using originalPrice format - sale price ${product.normalPrice} (was ${product.originalPrice})`);
     }
     
     // ✅ CRITICAL FIX: Use MongoDB ID for product URL (as requested by client)
@@ -314,29 +327,44 @@ const exportAllProductsToFacebookCatalog = async (token: string, totalProducts: 
       
       console.log(`Page ${page}: received ${productsData.length} products`);
       
-      const formattedProducts = productsData.map((product: any) => ({
-        _id: product._id,
-        title: product.title,
-        description: product.description,
-        category: product.category,
-        imageUrl: product.imageUrl,
-        normalPrice: product.normalPrice || product.price || 0,
-        salePrice: product.salePrice || product.discountedPrice,
-        originalPrice: product.originalPrice,
-        stockQuantity: product.stockQuantity || 0,
-        status: product.status,
-        tags: product.tags,
-        brand: product.brand,
-        color: product.color,
-        size: product.size,
-        material: product.material,
-        pattern: product.pattern,
-        gender: product.gender,
-        age_group: product.age_group,
-        gtin: product.gtin,
-        weight: product.weight,
-        videoUrl: product.videoUrl,
-      }));
+      const formattedProducts = productsData.map((product: any) => {
+        // FIXED: Better handling of salePrice
+        // Log raw data for debugging
+        console.log(`Raw product data for ${product._id}:`, {
+          title: product.title,
+          normalPrice: product.normalPrice,
+          salePrice: product.salePrice,
+          discountedPrice: product.discountedPrice,
+          originalPrice: product.originalPrice
+        });
+        
+        return {
+          _id: product._id,
+          title: product.title,
+          description: product.description,
+          category: product.category,
+          imageUrl: product.imageUrl,
+          normalPrice: product.normalPrice || product.price || 0,
+          // FIXED: Don't use || operator that might filter out 0 or falsy values
+          // Instead, check if salePrice exists in the product object
+          salePrice: product.salePrice !== undefined ? product.salePrice : 
+                     (product.discountedPrice !== undefined ? product.discountedPrice : undefined),
+          originalPrice: product.originalPrice,
+          stockQuantity: product.stockQuantity || 0,
+          status: product.status,
+          tags: product.tags,
+          brand: product.brand,
+          color: product.color,
+          size: product.size,
+          material: product.material,
+          pattern: product.pattern,
+          gender: product.gender,
+          age_group: product.age_group,
+          gtin: product.gtin,
+          weight: product.weight,
+          videoUrl: product.videoUrl,
+        };
+      });
       
       allProducts = [...allProducts, ...formattedProducts];
       
@@ -354,13 +382,19 @@ const exportAllProductsToFacebookCatalog = async (token: string, totalProducts: 
 
     console.log(`✅ Full catalog export complete: ${allProducts.length} products fetched`);
     
-    // Count discounted products for reporting
-    const discountedCount = allProducts.filter(p => 
-      (p.salePrice && p.salePrice < p.normalPrice) || 
-      (p.originalPrice && p.originalPrice > p.normalPrice)
-    ).length;
+    // Count discounted products for reporting - with better detection
+    const discountedProducts = allProducts.filter(p => {
+      const hasSalePrice = p.salePrice !== undefined && p.salePrice !== null;
+      const isDiscounted = hasSalePrice && p.salePrice < p.normalPrice;
+      
+      if (hasSalePrice) {
+        console.log(`Product ${p._id} - ${p.title}: salePrice=${p.salePrice}, normalPrice=${p.normalPrice}, isDiscounted=${isDiscounted}`);
+      }
+      
+      return isDiscounted;
+    });
     
-    console.log(`Found ${discountedCount} products with discounts`);
+    console.log(`Found ${discountedProducts.length} products with discounts`);
     
     // Convert to CSV and download
     const csvContent = convertToFacebookCatalogCSV(allProducts);
@@ -372,7 +406,7 @@ const exportAllProductsToFacebookCatalog = async (token: string, totalProducts: 
     toast.success(
       <div>
         <p className="font-bold">✅ Exported ALL {allProducts.length} products!</p>
-        <p className="text-sm mt-1">{discountedCount} products have discount prices</p>
+        <p className="text-sm mt-1">{discountedProducts.length} products have discount prices</p>
         <p className="text-xs mt-1">Ready for Facebook advertising</p>
       </div>
     );
@@ -380,6 +414,14 @@ const exportAllProductsToFacebookCatalog = async (token: string, totalProducts: 
     // Log sample URL for verification
     const sampleProduct = allProducts[0];
     console.log('Sample product URL:', `https://www.duemanbd.com/product/${sampleProduct._id}`);
+    
+    // Log first few discounted products for verification
+    if (discountedProducts.length > 0) {
+      console.log('Sample discounted products:');
+      discountedProducts.slice(0, 3).forEach(p => {
+        console.log(`  - ${p.title}: ৳{p.normalPrice} → ৳{p.salePrice}`);
+      });
+    }
     
   } catch (error) {
     console.error("Error exporting full catalog:", error);
@@ -479,7 +521,9 @@ export default function AdminProductsPage() {
         category: product.category || "uncategorized",
         imageUrl: product.imageUrl || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&h=300&fit=crop',
         normalPrice: product.normalPrice || product.price || 0,
-        salePrice: product.salePrice || product.discountedPrice || undefined,
+        // FIXED: Better handling of salePrice
+        salePrice: product.salePrice !== undefined ? product.salePrice : 
+                   (product.discountedPrice !== undefined ? product.discountedPrice : undefined),
         originalPrice: product.originalPrice || product.normalPrice || product.price || 0,
         isBestSelling: product.isBestSelling || false,
         isNew: product.isNew || false,
@@ -676,6 +720,16 @@ export default function AdminProductsPage() {
     await exportAllProductsToFacebookCatalog(token, pagination.totalProducts, setExportingCatalog);
   };
 
+  // Function to test discount display (for debugging)
+  const testDiscountDisplay = () => {
+    const discounted = products.filter(p => p.salePrice && p.salePrice < p.normalPrice);
+    console.log('Current page discounted products:', discounted.length);
+    discounted.forEach(p => {
+      console.log(`- ${p.title}: ৳{p.normalPrice} → ৳{p.salePrice}`);
+    });
+    toast.success(`Found ${discounted.length} discounted products on current page`);
+  };
+
   if (loading && currentPage === 1) {
     return (
       <div className="flex min-h-screen bg-gray-50">
@@ -729,6 +783,15 @@ export default function AdminProductsPage() {
                     <span className="hidden sm:inline">Refresh</span>
                   </>
                 )}
+              </button>
+              
+              {/* Debug button - can be removed after fixing */}
+              <button
+                onClick={testDiscountDisplay}
+                className="px-2 py-2 bg-yellow-100 text-yellow-700 rounded-lg text-xs hidden md:block"
+                title="Test discount display"
+              >
+                Test
               </button>
               
               {/* SINGLE EXPORT BUTTON - Exports ALL 30 products */}
@@ -812,9 +875,9 @@ export default function AdminProductsPage() {
             <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-500">Featured</p>
+                  <p className="text-sm text-gray-500">Discounted</p>
                   <p className="text-2xl font-bold text-gray-900">
-                    {products.filter(p => p.featured).length}
+                    {products.filter(p => p.salePrice && p.salePrice < p.normalPrice).length}
                   </p>
                 </div>
                 <div className="p-2 bg-purple-50 rounded-lg">
@@ -932,7 +995,6 @@ export default function AdminProductsPage() {
     </div>
   );
 }
-
 
 
 // // admin/src/app/(admin)/products/page.tsx - UPDATED with Pagination
