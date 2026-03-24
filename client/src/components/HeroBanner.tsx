@@ -5,6 +5,7 @@
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { bannerSlides } from "@/lib/banner-data";
+import Image from "next/image";
 
 // Main Hero Component
 export default function HeroWithFeatures() {
@@ -40,133 +41,123 @@ export default function HeroWithFeatures() {
             index === currentSlide ? "opacity-100 z-10" : "opacity-0 z-0"
           }`}
         >
-          <div
-            className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-            style={{
-              backgroundImage: `url(${slide.image})`,
-              backgroundPosition: "center",
-              backgroundSize: "cover",
-              backgroundColor: "#1e293b", // Fallback color (slate-800)
-            }}
-          >
-            <div className="absolute inset-0 bg-gradient-to-r from-slate-950/90 via-slate-900/80 to-slate-800/70"></div>
+          {/* Image Container */}
+          <div className="absolute inset-0">
+            <Image
+              src={slide.image}
+              alt={slide.title}
+              fill
+              priority={index === 0}
+              sizes="100vw"
+              quality={100}
+              className="object-cover object-center"
+              style={{ objectFit: "cover" }}
+            />
+            {/* OPTION 1: Very subtle gradient overlay (just enough for text readability) */}
+            <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-black/20 to-black/30"></div>
+            
+            {/* OPTION 2: No overlay at all (if text is readable on your images) */}
+            {/* <div className="absolute inset-0"></div> */}
+            
+            {/* OPTION 3: Bottom-only gradient for text readability */}
+            {/* <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div> */}
           </div>
 
           <div className="relative h-full flex items-center">
             <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 max-w-7xl mx-auto">
               <div className="max-w-2xl mx-auto lg:mx-0 lg:ml-8 xl:ml-16 text-center lg:text-left">
-                {/* Category Badge */}
-                <div
-                  className="inline-flex items-center px-3 py-1.5 sm:px-4 sm:py-2 rounded-full mb-4 sm:mb-6 shadow-lg"
-                  style={{
-                    background:
-                      slide.badge === "Classic"
-                        ? "linear-gradient(135deg, #d97706, #b45309)"
-                        : slide.badge === "Premium"
-                          ? "linear-gradient(135deg, #10b981, #059669)"
-                          : slide.badge === "New"
-                            ? "linear-gradient(135deg, #3b82f6, #1d4ed8)"
-                            : "linear-gradient(135deg, #8b5cf6, #7c3aed)",
-                  }}
-                >
+                {/* Add text shadow for better readability on bright images */}
+                <div className="[text-shadow:_0_2px_4px_rgba(0,0,0,0.3)]">
+                  {/* Category Badge */}
                   <div
-                    className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full mr-1.5 sm:mr-2 animate-pulse ${
-                      slide.badge === "Classic"
-                        ? "bg-amber-300"
-                        : slide.badge === "Premium"
-                          ? "bg-green-300"
-                          : slide.badge === "New"
-                            ? "bg-blue-300"
-                            : "bg-purple-300"
-                    }`}
-                  ></div>
-                  <span className="text-white text-xs sm:text-sm font-semibold">
-                    {slide.badge}
-                  </span>
-                </div>
-
-                {/* Collection Label */}
-                <div className="mb-3 sm:mb-4">
-                  <span className="text-amber-300 text-sm sm:text-base lg:text-lg font-medium tracking-wide">
-                    {slide.collection}
-                  </span>
-                </div>
-
-                {/* Title & Subtitle */}
-                <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold text-white mb-3 sm:mb-4 leading-tight">
-                  <span className="block">{slide.title}</span>
-                  <span className="block bg-gradient-to-r from-amber-400 via-amber-300 to-amber-200 bg-clip-text text-transparent">
-                    {slide.subtitle}
-                  </span>
-                </h1>
-
-                {/* Description */}
-                <p className="text-sm sm:text-base lg:text-lg xl:text-xl text-amber-50/90 mb-4 sm:mb-6 max-w-md mx-auto lg:mx-0 leading-relaxed">
-                  {slide.description}
-                </p>
-
-                {/* Buttons */}
-                <div className="flex flex-col xs:flex-row gap-3 sm:gap-4 justify-center lg:justify-start">
-                  <Link
-                    href={slide.buttonLink}
-                    className="
-                      inline-flex items-center justify-center 
-                      px-4 sm:px-6 lg:px-8 py-2.5 sm:py-3 lg:py-4
-                      text-white
-                      font-semibold 
-                      rounded-lg
-                      transition-all duration-300 
-                      transform 
-                      hover:scale-105
-                      shadow-lg 
-                      hover:shadow-xl
-                      cursor-pointer
-                      bg-gradient-to-r from-amber-600 to-amber-500
-                      hover:from-amber-700 hover:to-amber-600
-                      border border-white/20 hover:border-amber-500
-                      text-sm sm:text-base lg:text-lg
-                      min-w-[140px] sm:min-w-[160px] lg:min-w-[180px] xl:min-w-[200px]
-                      whitespace-nowrap
-                    "
+                    className="inline-flex items-center px-3 py-1.5 sm:px-4 sm:py-2 rounded-full mb-4 sm:mb-6 shadow-lg"
+                    style={{
+                      background:
+                        slide.badge === "Classic"
+                          ? "linear-gradient(135deg, #d97706, #b45309)"
+                          : slide.badge === "Premium"
+                            ? "linear-gradient(135deg, #10b981, #059669)"
+                            : slide.badge === "New"
+                              ? "linear-gradient(135deg, #3b82f6, #1d4ed8)"
+                              : "linear-gradient(135deg, #8b5cf6, #7c3aed)",
+                    }}
                   >
-                    {slide.buttonText}
-                    <svg
-                      className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 ml-2 group-hover:translate-x-1 transition-transform"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
+                    <div
+                      className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full mr-1.5 sm:mr-2 animate-pulse ${
+                        slide.badge === "Classic"
+                          ? "bg-amber-300"
+                          : slide.badge === "Premium"
+                            ? "bg-green-300"
+                            : slide.badge === "New"
+                              ? "bg-blue-300"
+                              : "bg-purple-300"
+                      }`}
+                    ></div>
+                    <span className="text-white text-xs sm:text-sm font-semibold">
+                      {slide.badge}
+                    </span>
+                  </div>
+
+                  {/* Collection Label */}
+                  <div className="mb-3 sm:mb-4">
+                    <span className="text-amber-300 text-sm sm:text-base lg:text-lg font-medium tracking-wide drop-shadow-lg">
+                      {slide.collection}
+                    </span>
+                  </div>
+
+                  {/* Title & Subtitle */}
+                  <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold text-white mb-3 sm:mb-4 leading-tight drop-shadow-lg">
+                    <span className="block">{slide.title}</span>
+                    <span className="block bg-gradient-to-r from-amber-400 via-amber-300 to-amber-200 bg-clip-text text-transparent drop-shadow-lg">
+                      {slide.subtitle}
+                    </span>
+                  </h1>
+
+                  {/* Description */}
+                  <p className="text-sm sm:text-base lg:text-lg xl:text-xl text-white mb-4 sm:mb-6 max-w-md mx-auto lg:mx-0 leading-relaxed drop-shadow-lg">
+                    {slide.description}
+                  </p>
+
+                  {/* Buttons */}
+                  <div className="flex flex-col xs:flex-row gap-3 sm:gap-4 justify-center lg:justify-start">
+                    <Link
+                      href={slide.buttonLink}
+                      className="
+                        inline-flex items-center justify-center 
+                        px-4 sm:px-6 lg:px-8 py-2.5 sm:py-3 lg:py-4
+                        text-white
+                        font-semibold 
+                        rounded-lg
+                        transition-all duration-300 
+                        transform 
+                        hover:scale-105
+                        shadow-lg 
+                        hover:shadow-xl
+                        cursor-pointer
+                        bg-gradient-to-r from-amber-600 to-amber-500
+                        hover:from-amber-700 hover:to-amber-600
+                        border border-white/20 hover:border-amber-500
+                        text-sm sm:text-base lg:text-lg
+                        min-w-[140px] sm:min-w-[160px] lg:min-w-[180px] xl:min-w-[200px]
+                        whitespace-nowrap
+                      "
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M17 8l4 4m0 0l-4 4m4-4H3"
-                      />
-                    </svg>
-                  </Link>
-
-                  {/* <Link
-                    href={`/category/${slide.category}`}
-                    className="
-                      inline-flex items-center justify-center 
-                      px-4 sm:px-6 lg:px-8 py-2.5 sm:py-3 lg:py-4
-                      text-white
-                      font-semibold 
-                      rounded-lg 
-                      transition-all duration-300 
-                      transform
-                      hover:scale-105
-                      cursor-pointer
-                      border border-amber-500/40
-                      bg-gradient-to-r from-amber-600/30 to-amber-500/20 backdrop-blur-sm
-                      hover:bg-gradient-to-r hover:from-amber-600 hover:to-amber-500
-                      text-sm sm:text-base lg:text-lg
-                      min-w-[140px] sm:min-w-[160px] lg:min-w-[180px] xl:min-w-[200px]
-                      whitespace-nowrap
-                    "
-                  >
-                    View Collection
-                  </Link> */}
+                      {slide.buttonText}
+                      <svg
+                        className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 ml-2 group-hover:translate-x-1 transition-transform"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M17 8l4 4m0 0l-4 4m4-4H3"
+                        />
+                      </svg>
+                    </Link>
+                  </div>
                 </div>
               </div>
             </div>
