@@ -32,31 +32,37 @@ const WishlistContext = createContext<WishlistContextType | null>(null);
 
 export const WishlistProvider = ({ children }: { children: React.ReactNode }) => {
   const [wishlist, setWishlist] = useState<WishlistItem[]>([]);
+  const [isInitialized, setIsInitialized] = useState(false);
 
+  // Load from localStorage ONLY ONCE on mount
   useEffect(() => {
     if (typeof window !== "undefined") {
       const stored = localStorage.getItem("wishlist");
       if (stored) {
         try {
-          setWishlist(JSON.parse(stored));
+          const parsedWishlist = JSON.parse(stored);
+          setWishlist(parsedWishlist);
         } catch (error) {
           console.error("Error parsing wishlist:", error);
           setWishlist([]);
         }
       }
+      setIsInitialized(true);
     }
   }, []);
 
+  // Save to localStorage only after initial load and when wishlist changes
   useEffect(() => {
-    if (typeof window !== "undefined") {
+    if (isInitialized && typeof window !== "undefined") {
       localStorage.setItem("wishlist", JSON.stringify(wishlist));
+      // Dispatch event for cross-component updates
+      window.dispatchEvent(new CustomEvent("wishlist-updated", { detail: { wishlist } }));
     }
-  }, [wishlist]);
+  }, [wishlist, isInitialized]);
 
   const addToWishlist = (item: WishlistItem) => {
     console.log("Adding to wishlist:", item);
     setWishlist((prev) => {
-      // Check if already exists
       const exists = prev.some(p => p.id === item.id);
       if (exists) {
         console.log("Product already in wishlist");
@@ -74,7 +80,6 @@ export const WishlistProvider = ({ children }: { children: React.ReactNode }) =>
 
   const isInWishlist = (id: string) => {
     const exists = wishlist.some(item => item.id === id);
-    console.log(`Checking if ${id} is in wishlist: ${exists}`);
     return exists;
   };
   

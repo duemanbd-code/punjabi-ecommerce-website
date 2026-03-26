@@ -1,8 +1,8 @@
-// File: D:\Web Development\Projects\Client Projects\punjabi-ecommerce-website\admin\src\app\page.tsx
-import * as entry from '../../../src/app/page.js'
+// File: D:\Web Development\Projects\Client Projects\punjabi-ecommerce-website\admin\src\app\(admin)\settings\page.tsx
+import * as entry from '../../../../../src/app/(admin)/settings/page.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 
-type TEntry = typeof import('../../../src/app/page.js')
+type TEntry = typeof import('../../../../../src/app/(admin)/settings/page.js')
 
 // Check that the entry is a valid entry
 checkFields<Diff<{

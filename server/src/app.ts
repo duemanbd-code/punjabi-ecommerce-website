@@ -7,6 +7,7 @@ import path from "path";
 import adminRoutes from "./routes/admin.routes";
 import productRoutes from "./routes/product.routes";
 import orderRoutes from "./routes/order.routes";
+import authRoutes from "./routes/auth.routes"; // Add this import
 
 const app = express();
 
@@ -24,7 +25,7 @@ const allowedOrigins = [
   "https://punjabi-ecommerce-website.onrender.com",
   "https://puti-client-production-admin.vercel.app",
   "https://puti-client-production-t1kq.vercel.app",
-  "https://admin.duemanbd.com",  // ✅ FIXED: Removed leading space
+  "https://admin.duemanbd.com",
   "https://www.duemanbd.com",
   "https://duemanbd.com",
   // Add environment variables if they exist and are strings
@@ -86,7 +87,6 @@ app.use(
         console.log("❌ Blocked by CORS:", origin);
         console.log("🔄 Allowed origins:", cleanOrigins);
         // Instead of error, allow for now to debug
-        // callback(new Error(`Not allowed by CORS. Origin: ${origin}`));
         callback(null, true); // TEMPORARY: Allow all for debugging
       }
     },
@@ -114,6 +114,7 @@ app.use((req, res, next) => {
 });
 
 // Routes
+app.use("/api/auth", authRoutes); // Add auth routes
 app.use("/api/admin", adminRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/orders", orderRoutes);
@@ -167,6 +168,3 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 });
 
 export default app;
-
-
-

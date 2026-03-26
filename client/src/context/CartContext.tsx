@@ -12,12 +12,12 @@ export interface CartItem {
   quantity: number;
   size?: string;
   color?: string;
-  category?: string; // Added
-  normalPrice?: number; // Added
-  originalPrice?: number; // Added
-  offerPrice?: number; // Added
-  stock?: number; // Added
-  rating?: number; // Added
+  category?: string;
+  normalPrice?: number;
+  originalPrice?: number;
+  offerPrice?: number;
+  stock?: number;
+  rating?: number;
 }
 
 interface CartContextType {
@@ -28,7 +28,7 @@ interface CartContextType {
   decreaseQty: (id: string) => void;
   clearCart: () => void;
   getCartCount: () => number;
-  totalItems: number; // Added for Header compatibility
+  totalItems: number;
 }
 
 const CartContext = createContext<CartContextType | null>(null);
@@ -36,26 +36,34 @@ const CartContext = createContext<CartContextType | null>(null);
 export const CartProvider = ({ children }: { children: React.ReactNode }) => {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [totalItems, setTotalItems] = useState(0);
+  const [isInitialized, setIsInitialized] = useState(false);
 
-  // Load from localStorage
+  // Load from localStorage ONLY ONCE on mount
   useEffect(() => {
     if (typeof window !== "undefined") {
       const stored = localStorage.getItem("cart");
       if (stored) {
-        const parsedCart = JSON.parse(stored);
-        setCart(parsedCart);
-        setTotalItems(parsedCart.reduce((sum: number, item: CartItem) => sum + item.quantity, 0));
+        try {
+          const parsedCart = JSON.parse(stored);
+          setCart(parsedCart);
+          setTotalItems(parsedCart.reduce((sum: number, item: CartItem) => sum + item.quantity, 0));
+        } catch (error) {
+          console.error("Error parsing cart:", error);
+        }
       }
+      setIsInitialized(true);
     }
   }, []);
 
-  // Save to localStorage and update total items
+  // Save to localStorage only after initial load and when cart changes
   useEffect(() => {
-    if (typeof window !== "undefined") {
+    if (isInitialized && typeof window !== "undefined") {
       localStorage.setItem("cart", JSON.stringify(cart));
       setTotalItems(cart.reduce((sum, item) => sum + item.quantity, 0));
+      // Dispatch event for cross-component updates
+      window.dispatchEvent(new CustomEvent("cart-updated", { detail: { cart } }));
     }
-  }, [cart]);
+  }, [cart, isInitialized]);
 
   const addToCart = (item: CartItem) => {
     setCart((prev) => {
@@ -93,8 +101,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
 
   const clearCart = () => setCart([]);
 
-  const getCartCount = () =>
-    cart.reduce((sum, item) => sum + item.quantity, 0);
+  const getCartCount = () => cart.reduce((sum, item) => sum + item.quantity, 0);
 
   return (
     <CartContext.Provider
@@ -106,7 +113,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
         decreaseQty,
         clearCart,
         getCartCount,
-        totalItems, // Added
+        totalItems,
       }}
     >
       {children}

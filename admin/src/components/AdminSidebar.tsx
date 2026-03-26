@@ -18,6 +18,7 @@ import {
   Menu,
   X,
   Home,
+  Users,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 
@@ -32,12 +33,12 @@ export default function AdminSidebar() {
   // Detect mobile on mount and resize
   useEffect(() => {
     const checkMobile = () => {
-      const mobile = window.innerWidth < 1024; // lg breakpoint
+      const mobile = window.innerWidth < 1024;
       setIsMobile(mobile);
       if (mobile) {
-        setIsSidebarOpen(false); // Close sidebar on mobile by default
+        setIsSidebarOpen(false);
       } else {
-        setIsSidebarOpen(true); // Open sidebar on desktop by default
+        setIsSidebarOpen(true);
       }
     };
 
@@ -56,6 +57,7 @@ export default function AdminSidebar() {
   const isActive = (href: string) => pathname === href;
   const isProductsActive =
     pathname?.includes("/products") || pathname?.includes("/categories");
+  const isUsersActive = pathname?.includes("/users");
 
   const menuItems = [
     {
@@ -85,6 +87,13 @@ export default function AdminSidebar() {
       ],
     },
     {
+      // Users - Now just a direct link, no submenu
+      href: "/users",
+      label: "Users",
+      icon: Users,
+      badge: null,
+    },
+    {
       href: "/orders",
       label: "Orders",
       icon: ShoppingCart,
@@ -106,6 +115,13 @@ export default function AdminSidebar() {
 
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
+  };
+
+  // Handle logout
+  const handleLogout = () => {
+    localStorage.removeItem("admin-token");
+    localStorage.removeItem("admin-user");
+    window.location.href = "/login";
   };
 
   return (
@@ -131,9 +147,9 @@ export default function AdminSidebar() {
       )}
 
       {/* Sidebar */}
-     <aside
+      <aside
         className={`
-           top-0 left-0 h-screen
+          top-0 left-0 h-screen
           w-72 bg-white p-6 flex flex-col border-r border-gray-100 shadow-xl 
           sticky overflow-hidden z-50 transition-transform duration-300 ease-in-out overflow-y-auto
           ${isSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
@@ -174,7 +190,8 @@ export default function AdminSidebar() {
           <div className="space-y-1">
             {menuItems.map((item) => {
               const Icon = item.icon;
-              const active = "href" in item ? isActive(item.href) : item.isActive;
+              const active =
+                "href" in item ? isActive(item.href) : item.isActive;
 
               if ("submenu" in item) {
                 return (
@@ -184,9 +201,10 @@ export default function AdminSidebar() {
                       className={`
                         w-full flex items-center justify-between px-3 py-3 rounded-xl 
                         transition-all duration-300 group border border-transparent
-                        ${active
-                          ? "bg-amber-50/80 border border-amber-200 shadow-md"
-                          : "hover:bg-gray-50 hover:border-gray-200 hover:shadow-sm"
+                        ${
+                          active
+                            ? "bg-amber-50/80 border border-amber-200 shadow-md"
+                            : "hover:bg-gray-50 hover:border-gray-200 hover:shadow-sm"
                         }
                       `}
                     >
@@ -194,9 +212,10 @@ export default function AdminSidebar() {
                         <div
                           className={`
                             p-2 lg:p-2.5 rounded-xl transition-all duration-300 flex-shrink-0
-                            ${active
-                              ? "bg-gradient-to-br from-amber-500 to-amber-600 shadow-lg shadow-amber-500/30"
-                              : "bg-gray-100 group-hover:bg-amber-50"
+                            ${
+                              active
+                                ? "bg-gradient-to-br from-amber-500 to-amber-600 shadow-lg shadow-amber-500/30"
+                                : "bg-gray-100 group-hover:bg-amber-50"
                             }
                           `}
                         >
@@ -212,9 +231,10 @@ export default function AdminSidebar() {
                         <span
                           className={`
                             font-semibold truncate
-                            ${active
-                              ? "text-amber-700"
-                              : "text-gray-700 group-hover:text-gray-900"
+                            ${
+                              active
+                                ? "text-amber-700"
+                                : "text-gray-700 group-hover:text-gray-900"
                             }
                           `}
                         >
@@ -226,9 +246,10 @@ export default function AdminSidebar() {
                           size={isMobile ? 16 : 18}
                           className={`
                             transform transition-transform duration-300
-                            ${openMenus[item.key]
-                              ? "rotate-90 text-amber-600"
-                              : "text-gray-400"
+                            ${
+                              openMenus[item.key]
+                                ? "rotate-90 text-amber-600"
+                                : "text-gray-400"
                             }
                           `}
                         />
@@ -245,13 +266,16 @@ export default function AdminSidebar() {
                             <Link
                               key={sublink.href}
                               href={sublink.href}
-                              onClick={() => isMobile && setIsSidebarOpen(false)}
+                              onClick={() =>
+                                isMobile && setIsSidebarOpen(false)
+                              }
                               className={`
                                 flex items-center justify-between px-3 lg:px-4 py-2.5 rounded-lg 
                                 transition-all duration-300 group border border-transparent
-                                ${subActive
-                                  ? "bg-gradient-to-r from-amber-50 to-amber-100/50 border border-amber-200 shadow-sm"
-                                  : "hover:bg-gray-50 hover:border-gray-100 hover:shadow-sm"
+                                ${
+                                  subActive
+                                    ? "bg-gradient-to-r from-amber-50 to-amber-100/50 border border-amber-200 shadow-sm"
+                                    : "hover:bg-gray-50 hover:border-gray-100 hover:shadow-sm"
                                 }
                               `}
                             >
@@ -259,9 +283,10 @@ export default function AdminSidebar() {
                                 <div
                                   className={`
                                     p-1.5 rounded-lg transition-colors duration-300 flex-shrink-0
-                                    ${subActive
-                                      ? "bg-amber-500/20"
-                                      : "bg-gray-100 group-hover:bg-amber-50/50"
+                                    ${
+                                      subActive
+                                        ? "bg-amber-500/20"
+                                        : "bg-gray-100 group-hover:bg-amber-50/50"
                                     }
                                   `}
                                 >
@@ -277,9 +302,10 @@ export default function AdminSidebar() {
                                 <span
                                   className={`
                                     font-medium text-sm truncate
-                                    ${subActive
-                                      ? "text-amber-700 font-semibold"
-                                      : "text-gray-600 group-hover:text-gray-900"
+                                    ${
+                                      subActive
+                                        ? "text-amber-700 font-semibold"
+                                        : "text-gray-600 group-hover:text-gray-900"
                                     }
                                   `}
                                 >
@@ -303,9 +329,10 @@ export default function AdminSidebar() {
                   className={`
                     flex items-center justify-between px-3 py-3 rounded-xl 
                     transition-all duration-300 group relative overflow-hidden border border-transparent
-                    ${active
-                      ? "bg-gradient-to-r from-amber-50 to-amber-100/50 border border-amber-200 shadow-md"
-                      : "hover:bg-gray-50 hover:border-gray-200 hover:shadow-sm"
+                    ${
+                      active
+                        ? "bg-gradient-to-r from-amber-50 to-amber-100/50 border border-amber-200 shadow-md"
+                        : "hover:bg-gray-50 hover:border-gray-200 hover:shadow-sm"
                     }
                   `}
                 >
@@ -318,9 +345,10 @@ export default function AdminSidebar() {
                     <div
                       className={`
                         p-2 lg:p-2.5 rounded-xl transition-all duration-300 flex-shrink-0
-                        ${active
-                          ? "bg-gradient-to-br from-amber-500 to-amber-600 shadow-lg shadow-amber-500/30"
-                          : "bg-gray-100 group-hover:bg-amber-50"
+                        ${
+                          active
+                            ? "bg-gradient-to-br from-amber-500 to-amber-600 shadow-lg shadow-amber-500/30"
+                            : "bg-gray-100 group-hover:bg-amber-50"
                         }
                       `}
                     >
@@ -336,9 +364,10 @@ export default function AdminSidebar() {
                     <span
                       className={`
                         font-semibold truncate
-                        ${active
-                          ? "text-amber-700"
-                          : "text-gray-700 group-hover:text-gray-900"
+                        ${
+                          active
+                            ? "text-amber-700"
+                            : "text-gray-700 group-hover:text-gray-900"
                         }
                       `}
                     >
@@ -349,9 +378,10 @@ export default function AdminSidebar() {
                     <span
                       className={`
                         px-2 py-1 text-xs font-bold rounded-full flex-shrink-0
-                        ${active
-                          ? "bg-amber-500 text-white shadow"
-                          : "bg-gray-200 text-gray-700 group-hover:bg-amber-100 group-hover:text-amber-700"
+                        ${
+                          active
+                            ? "bg-amber-500 text-white shadow"
+                            : "bg-gray-200 text-gray-700 group-hover:bg-amber-100 group-hover:text-amber-700"
                         }
                       `}
                     >
@@ -366,30 +396,6 @@ export default function AdminSidebar() {
 
         {/* Footer */}
         <div className="mt-8 pt-6 border-t border-gray-100 px-2">
-          {/* Home Button */}
-          <Link
-            href="/"
-            className="mb-3 flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-50 transition-colors duration-300"
-          >
-            <div className="p-2 rounded-lg bg-gray-100">
-              <Home className="w-4 h-4 text-gray-600" />
-            </div>
-            <span className="text-sm font-medium text-gray-700">Back to Store</span>
-          </Link>
-
-          {/* Logout Button */}
-          <button className="w-full flex items-center justify-center gap-3 px-3 py-3 rounded-xl bg-gradient-to-r from-gray-50 to-gray-100 hover:from-gray-100 hover:to-gray-200 border border-gray-200 transition-all duration-300 hover:shadow-md group">
-            <div className="p-2 rounded-lg bg-white group-hover:bg-red-50 transition-colors duration-300 shadow-sm">
-              <LogOut
-                size={18}
-                className="text-gray-600 group-hover:text-red-600 transition-colors duration-300"
-              />
-            </div>
-            <span className="font-semibold text-sm lg:text-base text-gray-700 group-hover:text-gray-900 truncate">
-              Logout
-            </span>
-          </button>
-
           <div className="text-center mt-4">
             <p className="text-xs text-gray-500 font-medium">
               v1.1 © 2025 Admin Panel

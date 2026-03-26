@@ -18,6 +18,8 @@ import {
   Bell,
   ArrowRightIcon,
   ChevronDown,
+  UserPlus,
+  ShoppingBag as OrdersIcon,
 } from "lucide-react";
 import Image from "next/image";
 import NavigationMenu from "./Menu";
@@ -34,6 +36,8 @@ export default function Header() {
   const [currentAnnouncement, setCurrentAnnouncement] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userName, setUserName] = useState<string>("");
+  const [userEmail, setUserEmail] = useState<string>("");
 
   // Use the updated hooks
   const cart = useCart();
@@ -43,13 +47,9 @@ export default function Header() {
   const cartCount = cart.getCartCount?.() || cart.totalItems || 0;
   const wishlistCount = wishlist.getWishlistCount?.() || 0;
 
-  // Punjabi product announcements
+  // Announcements
   const announcements = [
     "Handcrafted Zardusi Panjabi | Free Shipping Over ৳5000",
-    // "Patiala Salwar Special Collection 🔥",
-    // "Premium Punjabi Juttis – New Stock Available ✨",
-    // "Fashionable Turbans – Now Available Online 💫",
-    // "5000+ Orders Completed – Free Shipping 🎁",
   ];
 
   // Rotate announcements
@@ -69,10 +69,32 @@ export default function Header() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Check login status
+  // Check login status and get user info
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    setIsLoggedIn(!!token);
+    const checkLoginStatus = () => {
+      const token = localStorage.getItem("token");
+      const userData = localStorage.getItem("user");
+      
+      if (token && userData) {
+        try {
+          const user = JSON.parse(userData);
+          setIsLoggedIn(true);
+          setUserName(user.name || user.email?.split('@')[0] || "User");
+          setUserEmail(user.email || "");
+        } catch (error) {
+          console.error("Error parsing user data:", error);
+          setIsLoggedIn(false);
+        }
+      } else {
+        setIsLoggedIn(false);
+        setUserName("");
+        setUserEmail("");
+      }
+    };
+
+    checkLoginStatus();
+    window.addEventListener("storage", checkLoginStatus);
+    return () => window.removeEventListener("storage", checkLoginStatus);
   }, []);
 
   // Close dropdowns on outside click
@@ -97,6 +119,8 @@ export default function Header() {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     setIsLoggedIn(false);
+    setUserName("");
+    setUserEmail("");
     setDropdownOpen(false);
     router.push("/");
   };
@@ -105,33 +129,29 @@ export default function Header() {
     router.push("/login");
   };
 
-  // User menu items
-  const userMenuItems = [
-    { label: "My Profile", icon: <User size={16} />, href: "/account" },
-    { label: "My Orders", icon: <Package size={16} />, href: "/orders" },
-    {
-      label: "Notifications",
-      icon: <Bell size={16} />,
-      href: "/notifications",
-    },
-    { label: "Wishlist", icon: <Heart size={16} />, href: "/wishlist" },
-    { label: "Track Order", icon: <Package size={16} />, href: "/track-order" },
-    {
-      label: "Logout",
-      icon: <LogOut size={16} />,
-      href: "/logout",
-      isLogout: true,
-    },
-  ];
+  const handleRegister = () => {
+    router.push("/register");
+  };
+
+  // Get user initial for avatar
+  const getUserInitial = () => {
+    if (userName) {
+      return userName.charAt(0).toUpperCase();
+    }
+    if (userEmail) {
+      return userEmail.charAt(0).toUpperCase();
+    }
+    return "U";
+  };
 
   return (
     <header
       className={`sticky top-0 z-50 transition-all duration-300 ${
-        scrolled ? "bg-white shadow-lg" : "bg-white border-b"
+        scrolled ? "bg-white shadow-lg" : "bg-white border-b border-slate-200"
       }`}
     >
       {/* Top Announcement Bar */}
-      <div className="bg-gradient-to-r from-slate-950 to-slate-800 text-white">
+      <div className="bg-gradient-to-r from-slate-800 to-slate-900 text-white">
         <div className="max-w-7xl mx-auto px-4">
           <div className="h-10 flex items-center justify-center overflow-hidden">
             <div
@@ -148,18 +168,18 @@ export default function Header() {
       </div>
 
       {/* Main Header Container */}
-      <div className="max-w-7xl mx-auto px-18">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header Top Row */}
-        <div className="h-16 flex items-center justify-between relative">
+        <div className="h-16 flex items-center justify-between">
           {/* Left: Logo & Mobile Menu */}
-          <div className="flex items-center w-1/4 justify-start">
+          <div className="flex items-center gap-2 lg:w-1/4">
             {/* Mobile Menu Button */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden p-2 hover:bg-gray-100 rounded-lg mr-2"
+              className="lg:hidden p-2 hover:bg-slate-100 rounded-lg transition-colors"
               aria-label="Menu"
             >
-              {mobileMenuOpen ? <X size={24} /> : <MenuIcon size={24} />}
+              {mobileMenuOpen ? <X size={24} className="text-slate-600" /> : <MenuIcon size={24} className="text-slate-600" />}
             </button>
 
             {/* Logo */}
@@ -168,8 +188,8 @@ export default function Header() {
                 <Image
                   src="/brand-logo.png"
                   alt="PunjabiStyle Logo"
-                  width={150}
-                  height={150}
+                  width={140}
+                  height={140}
                   className="object-contain"
                   priority
                 />
@@ -177,24 +197,24 @@ export default function Header() {
             </Link>
           </div>
 
-          {/* Center: Search Bar (Desktop) */}
-          <div className="absolute left-1/2 transform -translate-x-1/2 hidden lg:block">
-            <div className="w-[650px]">
+          {/* Center: Search Bar */}
+          <div className="hidden lg:flex lg:items-center lg:justify-center lg:flex-1">
+            <div className="w-full max-w-xl">
               <form onSubmit={handleSearch} className="relative">
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search Punjabi..."
-                  className="w-full px-4 py-2.5 pl-12 pr-24 rounded-full text-slate-800 border border-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-slate-50"
+                  placeholder="Search Punjabi suits, juttis, pagdis..."
+                  className="w-full px-5 py-2.5 pl-12 pr-20 rounded-full border border-slate-300 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white text-slate-800"
                 />
                 <Search
-                  className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-500"
+                  className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400"
                   size={20}
                 />
                 <button
                   type="submit"
-                  className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-gradient-to-r from-slate-950 to-slate-800 text-white hover:text-amber-500 px-4 py-1.5 rounded-full hover:bg-slate-700 transition-colors text-sm cursor-pointer"
+                  className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-slate-800 text-white hover:bg-slate-950 px-4 py-1.5 rounded-full transition-all duration-300 text-sm font-medium cursor-pointer"
                 >
                   Search
                 </button>
@@ -203,20 +223,19 @@ export default function Header() {
           </div>
 
           {/* Right: Action Icons */}
-          <div className="flex items-center space-x-4 w-1/4 justify-end">
-            {/* Wishlist with real count */}
+          <div className="flex items-center gap-3 lg:w-1/4 justify-end">
+            {/* Wishlist Icon */}
             <Link
               href="/wishlist"
-              className="relative p-2 bg-slate-100 hover:bg-rose-50 rounded-full transition-colors group user-dropdown"
+              className="relative p-2 hover:bg-slate-100 rounded-full transition-all duration-300"
               aria-label="Wishlist"
-              title={`${wishlistCount} items in wishlist`}
             >
               <Heart
                 size={22}
                 className={`transition-colors ${
                   wishlistCount > 0
                     ? "text-rose-500 fill-rose-500"
-                    : "text-gray-700 group-hover:text-rose-500"
+                    : "text-slate-600 hover:text-rose-500"
                 }`}
               />
               {wishlistCount > 0 && (
@@ -226,58 +245,172 @@ export default function Header() {
               )}
             </Link>
 
-            {/* Cart with real count */}
+            {/* Cart Icon */}
             <Link
               href="/cart"
-              className="relative p-2 rounded-full transition-colors group hover:bg-slate-100 user-dropdown"
+              className="relative p-2 hover:bg-slate-100 rounded-full transition-all duration-300"
               aria-label="Cart"
-              title={`${cartCount} items in cart`}
             >
               <ShoppingBag
                 size={22}
                 className={`transition-colors ${
                   cartCount > 0
                     ? "text-amber-600"
-                    : "text-gray-700 group-hover:text-amber-600"
+                    : "text-slate-600 hover:text-amber-600"
                 }`}
               />
               {cartCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-amber-600 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full font-bold">
+                <span className="absolute -top-1 -right-1 bg-amber-500 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full font-bold">
                   {cartCount > 99 ? "99+" : cartCount}
                 </span>
               )}
             </Link>
 
-            {/* Track Order Button */}
-            {/* <Link
-              href="/track-order"
-              className="hidden lg:flex items-center gap-2 px-4 py-2 rounded-lg bg-white border border-slate-300 shadow-sm transition-all duration-300 group hover:border-amber-600 hover:shadow-md hover:bg-amber-50"
-            >
-              <ArrowRightIcon className="w-4 h-4 text-slate-600 group-hover:text-amber-600 transition-colors" />
-              <span className="text-sm font-semibold text-slate-800 group-hover:text-amber-700">
-                Track Order
-              </span>
-            </Link> */}
+            {/* Account Button - Moved to the END */}
+            {!isLoggedIn ? (
+              <div className="relative group">
+                <button className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-amber-50 text-slate-800 hover:text-amber-600 rounded-full transition-all duration-300 shadow-sm font-medium">
+                  <ArrowRightIcon size={18} className="rotate-180" />
+                  <span>Account</span>
+                </button>
+                
+                {/* Dropdown with Sign In and Register options */}
+                <div className="absolute right-0 mt-3 w-48 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50">
+                  <div className="bg-white rounded-xl shadow-xl border border-slate-200 overflow-hidden">
+                    <button
+                      onClick={handleLogin}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-sm text-slate-700 hover:bg-amber-50 hover:text-amber-600 transition-all duration-200 border-b border-slate-100"
+                    >
+                      <LogIn size={16} />
+                      <span>Sign In</span>
+                    </button>
+                    <button
+                      onClick={handleRegister}
+                      className="w-full flex items-center gap-3 px-4 py-3 text-sm text-slate-700 hover:bg-amber-50 hover:text-amber-600 transition-all duration-200"
+                    >
+                      <UserPlus size={16} />
+                      <span>Register</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              /* Logged In - User Avatar with Dropdown */
+              <div className="relative user-dropdown">
+                <button
+                  onClick={() => setDropdownOpen(!dropdownOpen)}
+                  className="flex items-center gap-2 p-1.5 bg-slate-100 hover:bg-slate-200 rounded-full transition-all duration-300"
+                  aria-label="User menu"
+                >
+                  {/* Avatar with User Initial */}
+                  <div className="w-9 h-9 bg-amber-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                    {getUserInitial()}
+                  </div>
+                  <ChevronDown 
+                    size={18} 
+                    className={`text-slate-600 transition-transform duration-300 ${
+                      dropdownOpen ? 'rotate-180' : ''
+                    }`}
+                  />
+                </button>
+
+                {/* Dropdown Menu for Logged In Users */}
+                {dropdownOpen && (
+                  <div className="absolute right-0 mt-3 w-64 bg-white rounded-xl shadow-xl border border-slate-200 overflow-hidden z-50 animate-slideDown">
+                    {/* User Info Header */}
+                    <div className="px-4 py-3 bg-slate-50 border-b border-slate-200">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-amber-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                          {getUserInitial()}
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-slate-800">{userName}</p>
+                          <p className="text-xs text-slate-500">{userEmail}</p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Menu Items */}
+                    <div className="py-2">
+                      {/* <Link
+                        href="/profile"
+                        onClick={() => setDropdownOpen(false)}
+                        className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-amber-50 hover:text-amber-600 transition-all duration-200"
+                      >
+                        <User size={16} />
+                        <span>My Profile</span>
+                      </Link> */}
+                      {/* <Link
+                        href="/orders"
+                        onClick={() => setDropdownOpen(false)}
+                        className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-amber-50 hover:text-amber-600 transition-all duration-200"
+                      >
+                        <OrdersIcon size={16} />
+                        <span>My Orders</span>
+                      </Link> */}
+                      <Link
+                        href="/wishlist"
+                        onClick={() => setDropdownOpen(false)}
+                        className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-amber-50 hover:text-amber-600 transition-all duration-200"
+                      >
+                        <Heart size={16} />
+                        <span>Wishlist</span>
+                        {wishlistCount > 0 && (
+                          <span className="ml-auto bg-amber-100 text-amber-600 text-xs px-2 py-0.5 rounded-full">
+                            {wishlistCount}
+                          </span>
+                        )}
+                      </Link>
+                      <Link
+                        href="/cart"
+                        onClick={() => setDropdownOpen(false)}
+                        className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-amber-50 hover:text-amber-600 transition-all duration-200"
+                      >
+                        <ShoppingBag size={16} />
+                        <span>Shopping Cart</span>
+                        {cartCount > 0 && (
+                          <span className="ml-auto bg-amber-100 text-amber-600 text-xs px-2 py-0.5 rounded-full">
+                            {cartCount}
+                          </span>
+                        )}
+                      </Link>
+                      
+                      {/* Divider */}
+                      <div className="border-t border-slate-100 my-2"></div>
+                      
+                      {/* Logout Button */}
+                      <button
+                        onClick={handleLogout}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-all duration-200"
+                      >
+                        <LogOut size={16} />
+                        <span>Logout</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
         {/* Search Bar (Mobile) */}
-        <div className="lg:hidden mb-4">
+        <div className="lg:hidden mt-2 mb-4">
           <form onSubmit={handleSearch} className="relative">
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search Punjabi suits, juttis, pagdis..."
-              className="w-full px-4 py-3 pl-12 pr-32 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-gray-50"
+              className="w-full px-4 py-3 pl-12 pr-32 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent bg-white"
             />
             <Search
-              className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"
+              className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400"
               size={20}
             />
             <button
               type="submit"
-              className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-gradient-to-r from-slate-950 to-slate-800 text-white hover:text-amber-500 px-4 py-1.5 rounded-lg hover:bg-slate-700 transition-colors text-sm"
+              className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-slate-800 text-white hover:bg-slate-950 px-4 py-1.5 rounded-lg transition-all duration-300 text-sm font-medium"
             >
               Search
             </button>
@@ -290,6 +423,36 @@ export default function Header() {
           setMobileMenuOpen={setMobileMenuOpen}
         />
       </div>
+
+      {/* Add animation styles */}
+      <style jsx>{`
+        @keyframes slideDown {
+          from {
+            opacity: 0;
+            transform: translateY(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        .animate-slideDown {
+          animation: slideDown 0.2s ease-out;
+        }
+        @keyframes slideUp {
+          from {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        .animate-slideUp {
+          animation: slideUp 0.5s ease-out;
+        }
+      `}</style>
     </header>
   );
 }
