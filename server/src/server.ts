@@ -49,16 +49,14 @@ console.log("========================\n");
 
 import app from "./app";
 import { connectDB } from "./config/db";
-import { initializeDefaultUsers } from "./controllers/auth.controller";
 
-// Connect to MongoDB
-connectDB().then(() => {
-  // Initialize default users after database connection
-  initializeDefaultUsers();
-});
+// Connect to MongoDB (NO automatic user creation)
+connectDB();
 
 const PORT = process.env.PORT || 4000;
 
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
+  console.log('📝 No default users created automatically');
+  console.log('💡 Run "npm run seed:admin" to create the first admin user');
 });

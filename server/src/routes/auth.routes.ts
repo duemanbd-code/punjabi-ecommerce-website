@@ -1,6 +1,5 @@
 // server/src/routes/auth.routes.ts
 
-// server/src/routes/auth.routes.ts
 import express, { Request, Response } from 'express';
 import {
   login,

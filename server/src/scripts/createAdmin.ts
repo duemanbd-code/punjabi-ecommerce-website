@@ -1,79 +1,53 @@
 // server/src/scripts/createAdmin.ts
 
-import mongoose, { Document, Schema, model } from "mongoose";
-import bcrypt from "bcryptjs";
-import dotenv from "dotenv";
+import mongoose from 'mongoose';
+import dotenv from 'dotenv';
+import path from 'path';
+import { User } from '../models/user.model';
 
-dotenv.config(); // loads .env.local or .env.production
+dotenv.config({ path: path.join(__dirname, '../../.env') });
 
-// -----------------------------
-// Define Admin interface
-// -----------------------------
-interface IAdmin extends Document {
-  name: string;
-  email: string;
-  password: string;
-  role: string;
-}
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/duemanbd-dev';
 
-// -----------------------------
-// Admin Schema
-// -----------------------------
-const adminSchema = new Schema<IAdmin>({
-  name: { type: String, required: true },
-  email: { type: String, required: true, unique: true },
-  password: { type: String, required: true },
-  role: { type: String, default: "admin" },
-});
-
-const Admin = model<IAdmin>("Admin", adminSchema);
-
-// -----------------------------
-// Connect to MongoDB
-// -----------------------------
-const mongoUri = process.env.MONGODB_URI;
-
-if (!mongoUri) {
-  console.error("❌ MONGODB_URI is not defined in .env");
-  process.exit(1);
-}
-
-mongoose
-  .connect(mongoUri)
-  .then(() => console.log("✅ MongoDB connected"))
-  .catch((err) => {
-    console.error("❌ MongoDB connection error:", err);
-    process.exit(1);
-  });
-
-// -----------------------------
-// Create Admin
-// -----------------------------
-async function createAdmin() {
+async function seedAdmin() {
   try {
-    const existing = await Admin.findOne({ email: "admin@gmail.com" });
-    if (existing) {
-      console.log("⚠️ Admin already exists");
-      process.exit(0);
-    }
-
-    const hashedPassword = await bcrypt.hash("123456", 10);
-
-    const admin = new Admin({
-      name: "Super Admin",
-      email: "admin@gmail.com",
-      password: hashedPassword,
-      role: "admin",
+    console.log('📝 Starting seed script...');
+    
+    await mongoose.connect(MONGODB_URI);
+    console.log('✅ Connected to MongoDB');
+    
+    // Delete existing admin to ensure clean slate
+    await User.deleteMany({ email: 'admin@example.com' });
+    console.log('🗑️  Removed existing admin');
+    
+    // Create admin with PLAIN password (model will hash it automatically)
+    const admin = new User({
+      name: 'Admin User',
+      email: 'admin@example.com',
+      password: 'admin123',  // ← PLAIN TEXT, NOT HASHED
+      role: 'admin'
     });
 
     await admin.save();
-    console.log("✅ Admin created successfully");
-    process.exit(0);
+    
+    console.log('✅ Admin created successfully!');
+    console.log('   Email: admin@example.com');
+    console.log('   Password: admin123');
+    console.log('   Role: admin');
+    
+    // Verify the hash
+    const verify = await User.findOne({ email: 'admin@example.com' });
+    console.log('\n📋 Verification:');
+    console.log('   Password hash starts with:', verify?.password?.substring(0, 20));
+    console.log('   Password is hashed:', verify?.password?.startsWith('$2a$') ? '✅ Yes' : '❌ No');
+    
+    await mongoose.disconnect();
+    console.log('\n✅ Done! Now try login');
+    
   } catch (err) {
-    console.error("❌ Error creating admin:", err);
+    console.error('❌ Error:', err);
     process.exit(1);
   }
 }
 
-// Run the script
-createAdmin();
+seedAdmin();
