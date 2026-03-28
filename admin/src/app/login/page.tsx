@@ -37,25 +37,52 @@ export default function AdminLoginPage() {
       });
 
       const data = await res.json();
+      
+      // Debug: Log the response to see what the backend returns
+      console.log("Response status:", res.status);
+      console.log("Response data:", data);
 
       if (!res.ok) {
-        throw new Error(data.message || "Login failed");
+        // Handle different status codes with appropriate messages
+        if (res.status === 401) {
+          toast.error("Invalid email or password");
+        } else if (res.status === 404) {
+          toast.error("Admin account not found");
+        } else if (res.status === 500) {
+          toast.error("Server error. Please try again later.");
+        } else {
+          // Try to get error message from different possible fields
+          const errorMessage = data.message || data.error || "Login failed. Please try again.";
+          toast.error(errorMessage);
+        }
+        return; // Stop execution here
       }
 
+      // Successful login
       const token = data.token;
-      if (!token) throw new Error("No token received");
+      if (!token) {
+        throw new Error("No token received from server");
+      }
 
+      // Store admin data
       localStorage.setItem("admin-token", token);
       localStorage.setItem("admin-user", JSON.stringify(data.admin || {}));
 
       toast.success("Login successful!");
+      
+      // Redirect to dashboard
       router.push("/dashboard");
+      
     } catch (err: any) {
+      console.error("Login error:", err);
+      
+      // Handle network errors
       if (
         err.message.includes("NetworkError") ||
-        err.message.includes("Failed to fetch")
+        err.message.includes("Failed to fetch") ||
+        err.name === "TypeError"
       ) {
-        toast.error("Cannot connect to server. Please try again later.");
+        toast.error("Cannot connect to server. Please check your internet connection.");
       } else {
         toast.error(err.message || "Login failed. Please try again.");
       }
@@ -89,8 +116,9 @@ export default function AdminLoginPage() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all"
                 required
+                placeholder="admin@example.com"
               />
             </div>
 
@@ -104,8 +132,9 @@ export default function AdminLoginPage() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all"
                 required
+                placeholder="Enter your password"
               />
             </div>
 
@@ -125,8 +154,12 @@ export default function AdminLoginPage() {
             </button>
           </div>
         </form>
+        
+        {/* Optional: Add a note for demo */}
+        <p className="text-center text-sm text-gray-500 mt-6">
+          Demo credentials: admin@example.com / admin123
+        </p>
       </div>
     </div>
   );
 }
-
