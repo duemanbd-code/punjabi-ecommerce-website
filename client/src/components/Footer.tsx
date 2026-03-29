@@ -271,7 +271,7 @@ export default function Footer() {
                 href="https://www.mironify.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="font-semibold text-amber-500 hover:text-amber-600 transition-colors"
+                className="font-semibold text-slate-800 hover:text-slate-950 transition-colors"
                 
               >
                 Mironify
