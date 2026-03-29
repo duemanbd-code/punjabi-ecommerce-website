@@ -268,13 +268,13 @@ export default function Footer() {
             <div className="text-xs sm:text-sm font-medium text-slate-600 text-center order-1 md:order-2">
               Designed & developed by{" "}
               <a
-                href="https://www.facebook.com/mironsolutions"
+                href="https://www.mironify.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="font-semibold hover:text-slate-950 transition-colors"
+                className="font-semibold text-amber-500 hover:text-amber-600 transition-colors"
                 
               >
-                Miron Solution
+                Mironify
               </a>
             </div>
 
