@@ -26,3 +26,12 @@ export const logout = (): void => {
   localStorage.removeItem('admin-user');
   window.location.href = '/login';
 };
+
+// ✅ ADD THIS FUNCTION - It's required by order.api.ts
+export const getAuthHeaders = (): Record<string, string> => {
+  const token = getAuthToken();
+  return token ? { 
+    'Authorization': `Bearer ${token}`,
+    'Content-Type': 'application/json'
+  } : {};
+};
