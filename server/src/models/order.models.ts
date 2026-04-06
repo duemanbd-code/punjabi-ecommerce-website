@@ -1,3 +1,5 @@
+// server/src/models/order.models.ts
+
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IOrderItem {

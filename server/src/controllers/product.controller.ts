@@ -1,4 +1,4 @@
-// server/src/controllers/product.controller.ts - COMPLETE UPDATED FILE WITH PAGINATION
+// server/src/controllers/product.controller.ts 
 
 import Product from '../models/product.models';
 import { deleteImage } from '../utils/cloudinary';

@@ -1,4 +1,4 @@
-// admin/src/app/page.tsx
+// admin/src/app/login/page.tsx 
 
 "use client";
 
@@ -17,7 +17,6 @@ export default function AdminLoginPage() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Clear previous error
     setError("");
 
     if (!email || !password) {
@@ -42,7 +41,6 @@ export default function AdminLoginPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        // Handle different status codes
         if (res.status === 401) {
           setError("Invalid email or password");
         } else if (res.status === 404) {
@@ -50,14 +48,12 @@ export default function AdminLoginPage() {
         } else if (res.status === 500) {
           setError("Server error. Please try again later.");
         } else {
-          const errorMessage = data.message || data.error || "Login failed. Please try again.";
-          setError(errorMessage);
+          setError(data.message || data.error || "Login failed. Please try again.");
         }
         setLoading(false);
         return;
       }
 
-      // Successful login
       const token = data.token;
       if (!token) {
         setError("No token received from server");
@@ -65,9 +61,17 @@ export default function AdminLoginPage() {
         return;
       }
 
-      // Store admin data
-      localStorage.setItem("admin-token", token);
+      console.log("✅ Token received");
+
+      // Save token to localStorage
+      localStorage.setItem('admin-token', token);
+      
+      // Store admin user data
       localStorage.setItem("admin-user", JSON.stringify(data.admin || {}));
+
+      // Verify token was saved
+      const savedToken = localStorage.getItem('admin-token');
+      console.log("✅ Token saved:", !!savedToken);
 
       // Redirect to dashboard
       router.push("/dashboard");
@@ -75,7 +79,6 @@ export default function AdminLoginPage() {
     } catch (err: any) {
       console.error("Login error:", err);
       
-      // Handle network errors
       if (
         err.message.includes("NetworkError") ||
         err.message.includes("Failed to fetch") ||
@@ -103,7 +106,6 @@ export default function AdminLoginPage() {
         </div>
 
         <form onSubmit={handleLogin} autoComplete="off" className="bg-white rounded-2xl shadow-xl p-8">
-          {/* Error Message - Red Text */}
           {error && (
             <div className="mb-6 p-3 bg-red-50 border border-red-200 rounded-lg">
               <p className="text-red-600 text-sm text-center font-medium">
@@ -118,17 +120,13 @@ export default function AdminLoginPage() {
                 Email Address
               </label>
               <input
-                name="email"
-                autoComplete="off"
                 type="email"
                 value={email}
                 onChange={(e) => {
                   setEmail(e.target.value);
-                  setError(""); // Clear error when user starts typing
+                  setError("");
                 }}
-                className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all ${
-                  error ? "border-red-500" : "border-gray-300"
-                }`}
+                className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all border-gray-300"
                 required
               />
             </div>
@@ -138,17 +136,13 @@ export default function AdminLoginPage() {
                 Password
               </label>
               <input
-                name="password"
-                autoComplete="new-password"
                 type="password"
                 value={password}
                 onChange={(e) => {
                   setPassword(e.target.value);
-                  setError(""); // Clear error when user starts typing
+                  setError("");
                 }}
-                className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all ${
-                  error ? "border-red-500" : "border-gray-300"
-                }`}
+                className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all border-gray-300"
                 required
               />
             </div>

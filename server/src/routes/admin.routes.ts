@@ -48,7 +48,29 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// GET admin profile - MUST BE BEFORE router.use(authenticateToken)
+// ✅ ADD THIS VERIFICATION ROUTE (after login, before profile)
+router.get('/verify', authenticateToken, authorizeAdmin, async (req, res) => {
+  try {
+    const admin = await User.findById(req.user?.id).select('-password');
+    if (!admin) {
+      return res.status(401).json({ message: 'Admin not found' });
+    }
+    res.json({ 
+      valid: true, 
+      admin: {
+        id: admin._id,
+        email: admin.email,
+        name: admin.name,
+        role: admin.role
+      }
+    });
+  } catch (error) {
+    console.error('Verify error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// GET admin profile
 router.get('/profile', authenticateToken, authorizeAdmin, async (req, res) => {
   try {
     const adminId = req.user?.id;

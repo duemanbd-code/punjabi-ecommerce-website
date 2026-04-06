@@ -113,7 +113,25 @@ export default function SettingsPage() {
         localStorage.setItem("admin-token", data.token);
       }
 
+      // Update admin user data in localStorage
+      if (data.admin) {
+        localStorage.setItem("admin-user", JSON.stringify(data.admin));
+      } else {
+        // If admin not returned, update just the name in existing data
+        const existingUser = localStorage.getItem("admin-user");
+        if (existingUser) {
+          const user = JSON.parse(existingUser);
+          user.name = formData.name;
+          user.email = formData.email;
+          localStorage.setItem("admin-user", JSON.stringify(user));
+        }
+      }
+
+      // ✅ Dispatch custom event to notify Topbar about the update
+      window.dispatchEvent(new Event('profileUpdated'));
+
       toast.success("Settings updated successfully!");
+      
       setFormData(prev => ({
         ...prev,
         currentPassword: "",
@@ -158,14 +176,25 @@ export default function SettingsPage() {
                 <label className={labelClasses}>Name</label>
                 <div className="relative">
                   <FiUser className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                  <input name="name" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className={`${inputClasses} pl-10`} />
+                  <input 
+                    name="name" 
+                    value={formData.name} 
+                    onChange={e => setFormData({...formData, name: e.target.value})} 
+                    className={`${inputClasses} pl-10`} 
+                  />
                 </div>
               </div>
               <div>
                 <label className={labelClasses}>Email</label>
                 <div className="relative">
                   <FiMail className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                  <input name="email" type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className={`${inputClasses} pl-10`} />
+                  <input 
+                    name="email" 
+                    type="email" 
+                    value={formData.email} 
+                    onChange={e => setFormData({...formData, email: e.target.value})} 
+                    className={`${inputClasses} pl-10`} 
+                  />
                 </div>
               </div>
             </div>
@@ -179,8 +208,17 @@ export default function SettingsPage() {
               <div>
                 <label className={labelClasses}>Current Password</label>
                 <div className="relative">
-                  <input type={showCurrentPassword ? "text" : "password"} value={formData.currentPassword} onChange={e => setFormData({...formData, currentPassword: e.target.value})} className={inputClasses} />
-                  <button type="button" onClick={() => setShowCurrentPassword(!showCurrentPassword)} className="absolute right-3 top-1/2 -translate-y-1/2">
+                  <input 
+                    type={showCurrentPassword ? "text" : "password"} 
+                    value={formData.currentPassword} 
+                    onChange={e => setFormData({...formData, currentPassword: e.target.value})} 
+                    className={inputClasses} 
+                  />
+                  <button 
+                    type="button" 
+                    onClick={() => setShowCurrentPassword(!showCurrentPassword)} 
+                    className="absolute right-3 top-1/2 -translate-y-1/2"
+                  >
                     {showCurrentPassword ? <FiEyeOff /> : <FiEye />}
                   </button>
                 </div>
@@ -188,17 +226,31 @@ export default function SettingsPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className={labelClasses}>New Password</label>
-                  <input type={showNewPassword ? "text" : "password"} value={formData.newPassword} onChange={e => setFormData({...formData, newPassword: e.target.value})} className={inputClasses} />
+                  <input 
+                    type={showNewPassword ? "text" : "password"} 
+                    value={formData.newPassword} 
+                    onChange={e => setFormData({...formData, newPassword: e.target.value})} 
+                    className={inputClasses} 
+                  />
                 </div>
                 <div>
                   <label className={labelClasses}>Confirm Password</label>
-                  <input type={showConfirmPassword ? "text" : "password"} value={formData.confirmPassword} onChange={e => setFormData({...formData, confirmPassword: e.target.value})} className={inputClasses} />
+                  <input 
+                    type={showConfirmPassword ? "text" : "password"} 
+                    value={formData.confirmPassword} 
+                    onChange={e => setFormData({...formData, confirmPassword: e.target.value})} 
+                    className={inputClasses} 
+                  />
                 </div>
               </div>
             </div>
           </div>
 
-          <button type="submit" disabled={isLoading} className="w-full py-3 bg-slate-800 text-white rounded-lg hover:bg-slate-900 disabled:opacity-50">
+          <button 
+            type="submit" 
+            disabled={isLoading} 
+            className="w-full py-3 bg-slate-800 text-white rounded-lg hover:bg-slate-900 disabled:opacity-50"
+          >
             {isLoading ? "Saving..." : "Save Changes"}
           </button>
         </form>

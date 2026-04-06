@@ -25,7 +25,7 @@ import {
   Key,
 } from "lucide-react";
 import Link from "next/link";
-import { checkAuthAndRedirect, getAuthToken } from "../../../utils/auth";
+import { getAuthToken } from "../../../utils/auth";
 
 const categories = ["regular-panjabi", "premium-panjabi", "luxury-panjabi"];
 
@@ -40,7 +40,7 @@ interface ProductForm {
   category: string;
   normalPrice: number;
   offerPrice: number;
-  sku: string; // CHANGED: Using sku for custom product code
+  sku: string;
   image?: File | null;
   additionalImages: File[];
   sizes: SizeStock[];
@@ -58,13 +58,14 @@ interface ProductForm {
 // Get API URL with fallback
 const getApiBaseUrl = (): string => {
   const envUrl = process.env.NEXT_PUBLIC_API_URL;
-  
+
   if (envUrl) {
-    if (!envUrl.startsWith('http')) {
-      const isProduction = typeof window !== 'undefined' ? 
-        !window.location.hostname.includes('localhost') : 
-        process.env.NODE_ENV === 'production';
-      
+    if (!envUrl.startsWith("http")) {
+      const isProduction =
+        typeof window !== "undefined"
+          ? !window.location.hostname.includes("localhost")
+          : process.env.NODE_ENV === "production";
+
       if (isProduction) {
         return `https://${envUrl}`;
       } else {
@@ -73,20 +74,21 @@ const getApiBaseUrl = (): string => {
     }
     return envUrl;
   }
-  
-  if (typeof window !== 'undefined') {
-    const isLocalhost = window.location.hostname === 'localhost' || 
-                        window.location.hostname === '127.0.0.1' ||
-                        window.location.hostname === '';
-    
+
+  if (typeof window !== "undefined") {
+    const isLocalhost =
+      window.location.hostname === "localhost" ||
+      window.location.hostname === "127.0.0.1" ||
+      window.location.hostname === "";
+
     if (isLocalhost) {
-      return 'http://localhost:4000';
+      return "http://localhost:4000";
     } else {
-      return 'https://taskin-panjabi-server.onrender.com';
+      return "https://taskin-panjabi-server.onrender.com";
     }
   }
-  
-  return 'http://localhost:4000';
+
+  return "http://localhost:4000";
 };
 
 // Get API URL for requests
@@ -104,7 +106,7 @@ export default function ProductFormPage({ productId }: { productId?: string }) {
     category: categories[0],
     normalPrice: 0,
     offerPrice: 0,
-    sku: "", // CHANGED: Initialize sku (custom product code)
+    sku: "",
     image: null,
     additionalImages: [],
     sizes: [{ size: "M", stock: 10 }],
@@ -120,32 +122,33 @@ export default function ProductFormPage({ productId }: { productId?: string }) {
   const [submitting, setSubmitting] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [additionalPreviews, setAdditionalPreviews] = useState<string[]>([]);
-  const [existingAdditionalImages, setExistingAdditionalImages] = useState<string[]>([]);
+  const [existingAdditionalImages, setExistingAdditionalImages] = useState<
+    string[]
+  >([]);
   const [imageError, setImageError] = useState<string | null>(null);
-  const [additionalImageErrors, setAdditionalImageErrors] = useState<string[]>([]);
+  const [additionalImageErrors, setAdditionalImageErrors] = useState<string[]>(
+    [],
+  );
   const [offerPercentage, setOfferPercentage] = useState<number>(0);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
   const additionalFileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
-  // Check authentication
-  useEffect(() => {
-    if (!checkAuthAndRedirect(router)) {
-      toast.error("Please login first");
-      return;
-    }
-  }, [router]);
-
   // Calculate offer percentage when normalPrice or offerPrice changes
   useEffect(() => {
-    if (form.normalPrice > 0 && form.offerPrice > 0 && form.offerPrice < form.normalPrice) {
-      const percentage = ((form.normalPrice - form.offerPrice) / form.normalPrice) * 100;
+    if (
+      form.normalPrice > 0 &&
+      form.offerPrice > 0 &&
+      form.offerPrice < form.normalPrice
+    ) {
+      const percentage =
+        ((form.normalPrice - form.offerPrice) / form.normalPrice) * 100;
       setOfferPercentage(Math.round(percentage));
-      setForm(prev => ({ ...prev, hasOffer: true }));
+      setForm((prev) => ({ ...prev, hasOffer: true }));
     } else {
       setOfferPercentage(0);
-      setForm(prev => ({ ...prev, hasOffer: false }));
+      setForm((prev) => ({ ...prev, hasOffer: false }));
     }
   }, [form.normalPrice, form.offerPrice]);
 
@@ -163,13 +166,16 @@ export default function ProductFormPage({ productId }: { productId?: string }) {
       try {
         setLoading(true);
         const apiUrl = getApiUrl();
-        console.log("🌐 Fetching product from:", `${apiUrl}/products/${productId}`);
+        console.log(
+          "🌐 Fetching product from:",
+          `${apiUrl}/products/${productId}`,
+        );
 
         const response = await fetch(`${apiUrl}/products/${productId}`, {
           headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
         });
 
         if (!response.ok) {
@@ -182,7 +188,8 @@ export default function ProductFormPage({ productId }: { productId?: string }) {
 
         // Calculate prices
         const normalPrice = productData.normalPrice || 0;
-        const salePrice = productData.salePrice || productData.offerPrice || normalPrice;
+        const salePrice =
+          productData.salePrice || productData.offerPrice || normalPrice;
         const hasOffer = salePrice < normalPrice;
 
         // Parse sizes
@@ -190,11 +197,11 @@ export default function ProductFormPage({ productId }: { productId?: string }) {
         if (productData.variants && Array.isArray(productData.variants)) {
           sizesData = productData.variants.map((v: any) => ({
             size: v.size || "M",
-            stock: v.stockQuantity || v.stock || 0
+            stock: v.stockQuantity || v.stock || 0,
           }));
         } else if (productData.sizes) {
           try {
-            if (typeof productData.sizes === 'string') {
+            if (typeof productData.sizes === "string") {
               sizesData = JSON.parse(productData.sizes);
             } else if (Array.isArray(productData.sizes)) {
               sizesData = productData.sizes;
@@ -208,7 +215,7 @@ export default function ProductFormPage({ productId }: { productId?: string }) {
         let tagsData = [];
         if (productData.tags) {
           try {
-            if (typeof productData.tags === 'string') {
+            if (typeof productData.tags === "string") {
               tagsData = JSON.parse(productData.tags);
             } else if (Array.isArray(productData.tags)) {
               tagsData = productData.tags;
@@ -219,7 +226,9 @@ export default function ProductFormPage({ productId }: { productId?: string }) {
           }
         }
 
-        tagsData = tagsData.filter((tag: any) => tag != null && String(tag).trim() !== "");
+        tagsData = tagsData.filter(
+          (tag: any) => tag != null && String(tag).trim() !== "",
+        );
 
         setForm({
           title: productData.title || "",
@@ -227,7 +236,7 @@ export default function ProductFormPage({ productId }: { productId?: string }) {
           category: productData.category || categories[0],
           normalPrice: normalPrice,
           offerPrice: salePrice,
-          sku: productData.sku || "", // CHANGED: Load sku (custom product code)
+          sku: productData.sku || "",
           image: null,
           additionalImages: [],
           sizes: sizesData,
@@ -236,8 +245,11 @@ export default function ProductFormPage({ productId }: { productId?: string }) {
           isBestSelling: productData.isBestSelling || false,
           isNew: productData.isNew || productData.isNewProduct || false,
           hasOffer: hasOffer,
-          stock: productData.stockQuantity || productData.stock || 
-                sizesData.reduce((sum, size) => sum + (size.stock || 0), 0) || 10,
+          stock:
+            productData.stockQuantity ||
+            productData.stock ||
+            sizesData.reduce((sum, size) => sum + (size.stock || 0), 0) ||
+            10,
           status: productData.productStatus || productData.status || "active",
         });
 
@@ -248,12 +260,16 @@ export default function ProductFormPage({ productId }: { productId?: string }) {
         }
 
         // Set existing additional images previews
-        if (productData.additionalImages && Array.isArray(productData.additionalImages)) {
-          const previews = productData.additionalImages
-            .filter((img: string) => img && img !== "undefined");
-          
+        if (
+          productData.additionalImages &&
+          Array.isArray(productData.additionalImages)
+        ) {
+          const previews = productData.additionalImages.filter(
+            (img: string) => img && img !== "undefined",
+          );
+
           console.log("🖼️ Setting additional images previews:", previews);
-          
+
           setExistingAdditionalImages(previews);
           setAdditionalPreviews(previews);
         }
@@ -264,8 +280,13 @@ export default function ProductFormPage({ productId }: { productId?: string }) {
           localStorage.removeItem("admin-token");
           localStorage.removeItem("admin-user");
           router.push("/login");
-        } else if (err.message.includes("NetworkError") || err.message.includes("Failed to fetch")) {
-          toast.error("Cannot connect to server. Check your internet connection.");
+        } else if (
+          err.message.includes("NetworkError") ||
+          err.message.includes("Failed to fetch")
+        ) {
+          toast.error(
+            "Cannot connect to server. Check your internet connection.",
+          );
         } else {
           toast.error(err.message || "Failed to fetch product");
         }
@@ -292,13 +313,13 @@ export default function ProductFormPage({ productId }: { productId?: string }) {
 
     if (!allowedTypes.includes(form.image.type)) {
       setImageError("Only JPG, PNG, and WebP images are allowed");
-      setForm(prev => ({ ...prev, image: null }));
+      setForm((prev) => ({ ...prev, image: null }));
       return;
     }
 
     if (form.image.size > maxSize) {
       setImageError("Image size should be less than 5MB");
-      setForm(prev => ({ ...prev, image: null }));
+      setForm((prev) => ({ ...prev, image: null }));
       return;
     }
 
@@ -313,7 +334,7 @@ export default function ProductFormPage({ productId }: { productId?: string }) {
   useEffect(() => {
     const newPreviews: string[] = [];
     const newErrors: string[] = [];
-    
+
     form.additionalImages.forEach((file, index) => {
       const allowedTypes = [
         "image/jpeg",
@@ -356,17 +377,16 @@ export default function ProductFormPage({ productId }: { productId?: string }) {
     if (!sku.trim()) {
       return "Product code is required";
     }
-    
-    // Allow letters, numbers, hyphens, underscores
+
     const validFormat = /^[A-Za-z0-9\-_]+$/;
     if (!validFormat.test(sku)) {
       return "Product code can only contain letters, numbers, hyphens, and underscores";
     }
-    
+
     if (sku.length > 50) {
       return "Product code must be less than 50 characters";
     }
-    
+
     return null;
   };
 
@@ -390,41 +410,45 @@ export default function ProductFormPage({ productId }: { productId?: string }) {
       newErrors.offerPrice = "Offer price cannot be greater than normal price";
     }
 
-    // Validate sku (custom product code)
     const skuError = validateSKU(form.sku);
     if (skuError) {
       newErrors.sku = skuError;
     }
 
     const validSizes = form.sizes.filter(
-      (size) => size && size.size && size.size.trim() !== "" && (size.stock || 0) >= 0
+      (size) =>
+        size && size.size && size.size.trim() !== "" && (size.stock || 0) >= 0,
     );
     if (validSizes.length === 0) {
       newErrors.sizes = "At least one valid size is required";
     }
 
-    const hasStock = form.sizes.some(size => (size.stock || 0) > 0);
+    const hasStock = form.sizes.some((size) => (size.stock || 0) > 0);
     if (!hasStock) {
       newErrors.stock = "At least one size must have stock quantity";
     }
 
-    const totalAdditionalImages = existingAdditionalImages.length + form.additionalImages.length;
+    const totalAdditionalImages =
+      existingAdditionalImages.length + form.additionalImages.length;
     if (totalAdditionalImages > 4) {
-      newErrors.additionalImages = "Maximum 4 additional images allowed (including existing ones)";
+      newErrors.additionalImages =
+        "Maximum 4 additional images allowed (including existing ones)";
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
+  // ✅ UPDATED: Fixed handleSubmit - REMOVED problematic token verification
   const handleSubmit = async () => {
     setErrors({});
-    
+
     if (!validateForm()) {
       toast.error("Please fix the errors in the form");
       return;
     }
 
+    // Get token
     const token = getAuthToken();
     if (!token) {
       toast.error("Please login first");
@@ -432,16 +456,24 @@ export default function ProductFormPage({ productId }: { productId?: string }) {
       return;
     }
 
+    // ❌ REMOVED: The token verification block that was calling /api/admin/verify
+    // This endpoint doesn't exist on your backend, causing the auto-logout
+
     setSubmitting(true);
+
     try {
       const formData = new FormData();
       formData.append("title", form.title);
       formData.append("description", form.description);
       formData.append("category", form.category);
       formData.append("normalPrice", form.normalPrice.toString());
-      formData.append("sku", form.sku.toUpperCase()); // CHANGED: Append sku as custom product code
-      
-      if (form.hasOffer && form.offerPrice > 0 && form.offerPrice < form.normalPrice) {
+      formData.append("sku", form.sku.toUpperCase());
+
+      if (
+        form.hasOffer &&
+        form.offerPrice > 0 &&
+        form.offerPrice < form.normalPrice
+      ) {
         formData.append("salePrice", form.offerPrice.toString());
         formData.append("originalPrice", form.normalPrice.toString());
       } else {
@@ -451,11 +483,11 @@ export default function ProductFormPage({ productId }: { productId?: string }) {
       const validatedSizes = form.sizes
         .filter(
           (size) =>
-            size && 
-            size.size && 
-            size.size.trim() !== "" && 
-            !isNaN(size.stock || 0) && 
-            (size.stock || 0) >= 0
+            size &&
+            size.size &&
+            size.size.trim() !== "" &&
+            !isNaN(size.stock || 0) &&
+            (size.stock || 0) >= 0,
         )
         .map((size) => ({
           size: size.size.toUpperCase(),
@@ -473,7 +505,7 @@ export default function ProductFormPage({ productId }: { productId?: string }) {
 
       const totalStock = validatedSizes.reduce(
         (sum, size) => sum + (size.stock || 0),
-        0
+        0,
       );
       formData.append("stock", totalStock.toString());
 
@@ -483,7 +515,11 @@ export default function ProductFormPage({ productId }: { productId?: string }) {
       if (form.image) {
         console.log("📤 Appending main image:", form.image.name);
         formData.append("image", form.image);
-      } else if (productId && imagePreview && !imagePreview.startsWith('data:')) {
+      } else if (
+        productId &&
+        imagePreview &&
+        !imagePreview.startsWith("data:")
+      ) {
         formData.append("keepExistingImage", "true");
       }
 
@@ -492,11 +528,16 @@ export default function ProductFormPage({ productId }: { productId?: string }) {
         formData.append("additionalImages", file);
       });
 
-      if (productId && existingAdditionalImages.length > 0 && form.additionalImages.length === 0) {
+      if (
+        productId &&
+        existingAdditionalImages.length > 0 &&
+        form.additionalImages.length === 0
+      ) {
         formData.append("keepExistingAdditionalImages", "true");
       }
 
       console.log("🚀 Submitting product...");
+      console.log("🔑 Token exists:", !!token);
 
       const apiUrl = getApiUrl();
       const url = productId
@@ -507,18 +548,30 @@ export default function ProductFormPage({ productId }: { productId?: string }) {
 
       console.log(`🌐 Sending ${method} request to: ${url}`);
 
+      // ✅ IMPORTANT: Don't set Content-Type header for FormData
       const response = await fetch(url, {
         method,
         headers: {
           Authorization: `Bearer ${token}`,
+          // ❌ DO NOT set Content-Type here - browser will set it with boundary
         },
         body: formData,
       });
 
+      // Handle 401 Unauthorized
+      if (response.status === 401) {
+        console.error("❌ 401 Unauthorized - Token invalid or expired");
+        toast.error("Session expired. Please login again.");
+        localStorage.removeItem("admin-token");
+        localStorage.removeItem("admin-user");
+        router.push("/login");
+        return;
+      }
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(
-          errorData.message || `HTTP error! status: ${response.status}`
+          errorData.message || `HTTP error! status: ${response.status}`,
         );
       }
 
@@ -526,7 +579,7 @@ export default function ProductFormPage({ productId }: { productId?: string }) {
       console.log(`✅ ${productId ? "Update" : "Create"} response:`, data);
 
       toast.success(
-        `Product ${productId ? "updated" : "created"} successfully!`
+        `Product ${productId ? "updated" : "created"} successfully!`,
       );
       router.push("/products");
     } catch (err: any) {
@@ -557,34 +610,40 @@ export default function ProductFormPage({ productId }: { productId?: string }) {
       const stockValue = Number(size.stock);
       return acc + (isNaN(stockValue) ? 0 : stockValue);
     }, 0);
-    
+
     setForm((prev) => ({ ...prev, stock: totalStock }));
   }, [form.sizes]);
 
   // Handle input changes
-  const handleInputChange = (field: keyof ProductForm) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const value = e.target.value;
-    setForm(prev => ({ ...prev, [field]: value }));
-    
-    if (errors[field]) {
-      setErrors(prev => {
-        const newErrors = { ...prev };
-        delete newErrors[field];
-        return newErrors;
-      });
-    }
-  };
+  const handleInputChange =
+    (field: keyof ProductForm) =>
+    (
+      e: React.ChangeEvent<
+        HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+      >,
+    ) => {
+      const value = e.target.value;
+      setForm((prev) => ({ ...prev, [field]: value }));
+
+      if (errors[field]) {
+        setErrors((prev) => {
+          const newErrors = { ...prev };
+          delete newErrors[field];
+          return newErrors;
+        });
+      }
+    };
 
   // Generate SKU helper
   const generateSKU = () => {
     const categoryPrefix = form.category.substring(0, 3).toUpperCase();
     const randomNum = Math.floor(1000 + Math.random() * 9000);
     const generatedSKU = `${categoryPrefix}-${randomNum}`;
-    
-    setForm(prev => ({ ...prev, sku: generatedSKU }));
-    
+
+    setForm((prev) => ({ ...prev, sku: generatedSKU }));
+
     if (errors.sku) {
-      setErrors(prev => {
+      setErrors((prev) => {
         const newErrors = { ...prev };
         delete newErrors.sku;
         return newErrors;
@@ -602,25 +661,30 @@ export default function ProductFormPage({ productId }: { productId?: string }) {
   };
 
   // Handle additional images upload
-  const handleAdditionalImagesUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAdditionalImagesUpload = (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     const files = Array.from(e.target.files || []);
-    
+
     if (files.length > 0) {
       if (e.target) {
         e.target.value = "";
       }
-      
-      const remainingSlots = 4 - (existingAdditionalImages.length + form.additionalImages.length);
+
+      const remainingSlots =
+        4 - (existingAdditionalImages.length + form.additionalImages.length);
       const filesToAdd = files.slice(0, remainingSlots);
-      
+
       if (filesToAdd.length < files.length) {
-        toast.error(`Maximum 4 additional images allowed. Added ${filesToAdd.length} of ${files.length}`);
+        toast.error(
+          `Maximum 4 additional images allowed. Added ${filesToAdd.length} of ${files.length}`,
+        );
       }
-      
+
       if (filesToAdd.length > 0) {
-        setForm(prev => ({
+        setForm((prev) => ({
           ...prev,
-          additionalImages: [...prev.additionalImages, ...filesToAdd]
+          additionalImages: [...prev.additionalImages, ...filesToAdd],
         }));
       }
     }
@@ -646,19 +710,19 @@ export default function ProductFormPage({ productId }: { productId?: string }) {
 
   // Remove new additional image
   const removeAdditionalImage = (index: number) => {
-    setForm(prev => ({
+    setForm((prev) => ({
       ...prev,
-      additionalImages: prev.additionalImages.filter((_, i) => i !== index)
+      additionalImages: prev.additionalImages.filter((_, i) => i !== index),
     }));
   };
 
   // Handle price changes
   const handleNormalPriceChange = (value: string) => {
     const price = parseFloat(value) || 0;
-    setForm(prev => ({ ...prev, normalPrice: price }));
-    
+    setForm((prev) => ({ ...prev, normalPrice: price }));
+
     if (errors.normalPrice) {
-      setErrors(prev => {
+      setErrors((prev) => {
         const newErrors = { ...prev };
         delete newErrors.normalPrice;
         return newErrors;
@@ -668,10 +732,10 @@ export default function ProductFormPage({ productId }: { productId?: string }) {
 
   const handleOfferPriceChange = (value: string) => {
     const price = parseFloat(value) || 0;
-    setForm(prev => ({ ...prev, offerPrice: price }));
-    
+    setForm((prev) => ({ ...prev, offerPrice: price }));
+
     if (errors.offerPrice) {
-      setErrors(prev => {
+      setErrors((prev) => {
         const newErrors = { ...prev };
         delete newErrors.offerPrice;
         return newErrors;
@@ -684,28 +748,32 @@ export default function ProductFormPage({ productId }: { productId?: string }) {
     if (percentage >= 0 && percentage <= 100) {
       setOfferPercentage(percentage);
       const calculatedOfferPrice = form.normalPrice * (1 - percentage / 100);
-      setForm(prev => ({ 
-        ...prev, 
+      setForm((prev) => ({
+        ...prev,
         offerPrice: Math.round(calculatedOfferPrice),
-        hasOffer: percentage > 0
+        hasOffer: percentage > 0,
       }));
     }
   };
 
   // Handle size changes
-  const handleSizeChange = (index: number, field: 'size' | 'stock', value: string) => {
+  const handleSizeChange = (
+    index: number,
+    field: "size" | "stock",
+    value: string,
+  ) => {
     const updatedSizes = [...form.sizes];
-    
-    if (field === 'size') {
+
+    if (field === "size") {
       updatedSizes[index].size = value.toUpperCase();
     } else {
       updatedSizes[index].stock = parseInt(value) || 0;
     }
-    
-    setForm(prev => ({ ...prev, sizes: updatedSizes }));
-    
+
+    setForm((prev) => ({ ...prev, sizes: updatedSizes }));
+
     if (errors.sizes || errors.stock) {
-      setErrors(prev => {
+      setErrors((prev) => {
         const newErrors = { ...prev };
         delete newErrors.sizes;
         delete newErrors.stock;
@@ -717,24 +785,26 @@ export default function ProductFormPage({ productId }: { productId?: string }) {
   // Handle tag addition
   const handleAddTag = (tag: string) => {
     if (tag.trim() && !form.tags.includes(tag.trim())) {
-      setForm(prev => ({
+      setForm((prev) => ({
         ...prev,
-        tags: [...prev.tags, tag.trim()]
+        tags: [...prev.tags, tag.trim()],
       }));
     }
   };
 
   // Handle tag removal
   const handleRemoveTag = (tagToRemove: string) => {
-    setForm(prev => ({
+    setForm((prev) => ({
       ...prev,
-      tags: prev.tags.filter(tag => tag !== tagToRemove)
+      tags: prev.tags.filter((tag) => tag !== tagToRemove),
     }));
   };
 
   // Handle checkbox changes
-  const handleCheckboxChange = (field: "featured" | "isBestSelling" | "isNew" | "hasOffer") => {
-    setForm(prev => ({ ...prev, [field]: !prev[field] }));
+  const handleCheckboxChange = (
+    field: "featured" | "isBestSelling" | "isNew" | "hasOffer",
+  ) => {
+    setForm((prev) => ({ ...prev, [field]: !prev[field] }));
   };
 
   if (loading && productId) {
@@ -822,15 +892,17 @@ export default function ProductFormPage({ productId }: { productId?: string }) {
                     </label>
                     <input
                       className={`w-full px-4 py-3.5 bg-white border rounded-xl focus:outline-none focus:ring-3 focus:ring-amber-500/20 focus:border-amber-500 transition-all duration-200 text-slate-800 placeholder-slate-400 ${
-                        errors.title ? 'border-red-500' : 'border-slate-300'
+                        errors.title ? "border-red-500" : "border-slate-300"
                       }`}
                       placeholder="Enter product name"
                       value={form.title}
-                      onChange={handleInputChange('title')}
+                      onChange={handleInputChange("title")}
                       required
                     />
                     {errors.title && (
-                      <p className="text-red-500 text-sm mt-1">{errors.title}</p>
+                      <p className="text-red-500 text-sm mt-1">
+                        {errors.title}
+                      </p>
                     )}
                   </div>
 
@@ -842,11 +914,11 @@ export default function ProductFormPage({ productId }: { productId?: string }) {
                     <div className="flex gap-2">
                       <input
                         className={`flex-1 px-4 py-3.5 bg-white border rounded-xl focus:outline-none focus:ring-3 focus:ring-amber-500/20 focus:border-amber-500 transition-all duration-200 text-slate-800 placeholder-slate-400 ${
-                          errors.sku ? 'border-red-500' : 'border-slate-300'
+                          errors.sku ? "border-red-500" : "border-slate-300"
                         }`}
                         placeholder="Enter custom product code (e.g., PANJABI-001)"
                         value={form.sku}
-                        onChange={handleInputChange('sku')}
+                        onChange={handleInputChange("sku")}
                         required
                       />
                       <button
@@ -861,7 +933,8 @@ export default function ProductFormPage({ productId }: { productId?: string }) {
                       <p className="text-red-500 text-sm mt-1">{errors.sku}</p>
                     )}
                     <p className="text-sm text-slate-500 mt-2">
-                      This unique code will be displayed on the product page and used for inventory tracking
+                      This unique code will be displayed on the product page and
+                      used for inventory tracking
                     </p>
                   </div>
                 </div>
@@ -875,7 +948,7 @@ export default function ProductFormPage({ productId }: { productId?: string }) {
                       <select
                         className="w-full px-4 py-3.5 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-3 focus:ring-amber-500/20 focus:border-amber-500 appearance-none transition-all duration-200 text-slate-800"
                         value={form.category}
-                        onChange={handleInputChange('category')}
+                        onChange={handleInputChange("category")}
                       >
                         {categories.map((c) => (
                           <option key={c} value={c} className="py-2">
@@ -897,7 +970,7 @@ export default function ProductFormPage({ productId }: { productId?: string }) {
                       <select
                         className="w-full px-4 py-3.5 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-3 focus:ring-amber-500/20 focus:border-amber-500 appearance-none transition-all duration-200 text-slate-800"
                         value={form.status}
-                        onChange={handleInputChange('status')}
+                        onChange={handleInputChange("status")}
                       >
                         <option value="active" className="text-green-600">
                           Active
@@ -926,12 +999,11 @@ export default function ProductFormPage({ productId }: { productId?: string }) {
                     className="w-full px-4 py-3.5 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-3 focus:ring-amber-500/20 focus:border-amber-500 transition-all duration-200 text-slate-800 placeholder-slate-400 min-h-[120px]"
                     placeholder="Describe the product features, materials, and details..."
                     value={form.description}
-                    onChange={handleInputChange('description')}
+                    onChange={handleInputChange("description")}
                   />
                 </div>
               </div>
 
-              {/* Rest of the form remains the same (Pricing, Sizes, Images, etc.) */}
               {/* Pricing Section */}
               <div className="bg-gradient-to-r from-amber-50/50 via-white to-amber-50/30 border border-amber-100 rounded-2xl p-6">
                 <div className="flex items-center gap-3 mb-6">
@@ -955,18 +1027,24 @@ export default function ProductFormPage({ productId }: { productId?: string }) {
                       <input
                         type="number"
                         className={`w-full pl-12 pr-4 py-3.5 bg-white border rounded-xl focus:outline-none focus:ring-3 focus:ring-amber-500/20 focus:border-amber-500 transition-all duration-200 text-slate-800 ${
-                          errors.normalPrice ? 'border-red-500' : 'border-slate-300'
+                          errors.normalPrice
+                            ? "border-red-500"
+                            : "border-slate-300"
                         }`}
                         placeholder="0.00"
                         value={form.normalPrice || ""}
-                        onChange={(e) => handleNormalPriceChange(e.target.value)}
+                        onChange={(e) =>
+                          handleNormalPriceChange(e.target.value)
+                        }
                         min="0"
                         step="0.01"
                         required
                       />
                     </div>
                     {errors.normalPrice && (
-                      <p className="text-red-500 text-sm mt-1">{errors.normalPrice}</p>
+                      <p className="text-red-500 text-sm mt-1">
+                        {errors.normalPrice}
+                      </p>
                     )}
                     <p className="text-sm text-slate-500 mt-2">
                       Regular price of the product
@@ -991,7 +1069,9 @@ export default function ProductFormPage({ productId }: { productId?: string }) {
                       <input
                         type="number"
                         className={`w-full pl-12 pr-4 py-3.5 bg-white border rounded-xl focus:outline-none focus:ring-3 focus:ring-amber-500/20 focus:border-amber-500 transition-all duration-200 text-slate-800 ${
-                          errors.offerPrice ? 'border-red-500' : 'border-slate-300'
+                          errors.offerPrice
+                            ? "border-red-500"
+                            : "border-slate-300"
                         }`}
                         placeholder="0.00"
                         value={form.offerPrice || ""}
@@ -1001,24 +1081,32 @@ export default function ProductFormPage({ productId }: { productId?: string }) {
                       />
                     </div>
                     {errors.offerPrice && (
-                      <p className="text-red-500 text-sm mt-1">{errors.offerPrice}</p>
+                      <p className="text-red-500 text-sm mt-1">
+                        {errors.offerPrice}
+                      </p>
                     )}
                     <p className="text-sm text-slate-500 mt-2">
                       Leave empty or set to 0 for no offer
                     </p>
-                    
+
                     {/* Offer Percentage Slider */}
                     {form.normalPrice > 0 && (
                       <div className="mt-4 space-y-2">
                         <div className="flex items-center justify-between">
-                          <label className="text-sm text-slate-600">Set discount percentage:</label>
+                          <label className="text-sm text-slate-600">
+                            Set discount percentage:
+                          </label>
                           <div className="flex items-center gap-2">
                             <input
                               type="number"
                               min="0"
                               max="100"
                               value={offerPercentage}
-                              onChange={(e) => handleOfferPercentageChange(parseInt(e.target.value) || 0)}
+                              onChange={(e) =>
+                                handleOfferPercentageChange(
+                                  parseInt(e.target.value) || 0,
+                                )
+                              }
                               className="w-16 px-2 py-1 text-sm border border-slate-300 rounded"
                             />
                             <span className="text-sm text-slate-600">%</span>
@@ -1029,7 +1117,11 @@ export default function ProductFormPage({ productId }: { productId?: string }) {
                           min="0"
                           max="100"
                           value={offerPercentage}
-                          onChange={(e) => handleOfferPercentageChange(parseInt(e.target.value))}
+                          onChange={(e) =>
+                            handleOfferPercentageChange(
+                              parseInt(e.target.value),
+                            )
+                          }
                           className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-amber-500"
                         />
                         <div className="flex justify-between text-xs text-slate-500">
@@ -1043,25 +1135,34 @@ export default function ProductFormPage({ productId }: { productId?: string }) {
                     )}
                   </div>
                 </div>
-                
+
                 {/* Price Summary */}
-                {form.hasOffer && form.normalPrice > 0 && form.offerPrice > 0 && (
-                  <div className="mt-6 p-4 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm text-slate-600">Price Summary</p>
-                        <div className="flex items-center gap-3 mt-1">
-                          <span className="text-lg font-bold text-slate-800">৳{form.offerPrice.toFixed(2)}</span>
-                          <span className="text-slate-500 line-through">৳{form.normalPrice.toFixed(2)}</span>
-                          <span className="text-sm font-bold text-green-600 bg-green-100 px-3 py-1 rounded-full">
-                            Save ৳{(form.normalPrice - form.offerPrice).toFixed(2)}
-                          </span>
+                {form.hasOffer &&
+                  form.normalPrice > 0 &&
+                  form.offerPrice > 0 && (
+                    <div className="mt-6 p-4 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-slate-600">
+                            Price Summary
+                          </p>
+                          <div className="flex items-center gap-3 mt-1">
+                            <span className="text-lg font-bold text-slate-800">
+                              ৳{form.offerPrice.toFixed(2)}
+                            </span>
+                            <span className="text-slate-500 line-through">
+                              ৳{form.normalPrice.toFixed(2)}
+                            </span>
+                            <span className="text-sm font-bold text-green-600 bg-green-100 px-3 py-1 rounded-full">
+                              Save ৳
+                              {(form.normalPrice - form.offerPrice).toFixed(2)}
+                            </span>
+                          </div>
                         </div>
+                        <BadgePercent className="text-green-500" size={24} />
                       </div>
-                      <BadgePercent className="text-green-500" size={24} />
                     </div>
-                  </div>
-                )}
+                  )}
               </div>
 
               {/* Sizes & Stock */}
@@ -1078,15 +1179,21 @@ export default function ProductFormPage({ productId }: { productId?: string }) {
                   <div className="flex items-center gap-2 text-slate-600 bg-slate-50 px-4 py-2 rounded-xl">
                     <Package size={16} />
                     <div className="text-right">
-                      <span className="text-sm font-medium block">Total Stock</span>
-                      <span className="text-lg font-bold">{form.stock} items</span>
+                      <span className="text-sm font-medium block">
+                        Total Stock
+                      </span>
+                      <span className="text-lg font-bold">
+                        {form.stock} items
+                      </span>
                     </div>
                   </div>
                 </div>
 
                 {(errors.sizes || errors.stock) && (
                   <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-                    <p className="text-red-600 text-sm">{errors.sizes || errors.stock}</p>
+                    <p className="text-red-600 text-sm">
+                      {errors.sizes || errors.stock}
+                    </p>
                   </div>
                 )}
 
@@ -1094,22 +1201,30 @@ export default function ProductFormPage({ productId }: { productId?: string }) {
                   {form.sizes.map((s, idx) => (
                     <div key={idx} className="flex gap-3">
                       <div className="flex-1">
-                        <label className="block text-xs text-slate-500 mb-1">Size</label>
+                        <label className="block text-xs text-slate-500 mb-1">
+                          Size
+                        </label>
                         <input
                           className="w-full px-4 py-3 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-3 focus:ring-amber-500/20 focus:border-amber-500 transition-all duration-200 text-slate-800 placeholder-slate-400"
                           placeholder="e.g., M, L, XL, XXL"
                           value={s.size}
-                          onChange={(e) => handleSizeChange(idx, 'size', e.target.value)}
+                          onChange={(e) =>
+                            handleSizeChange(idx, "size", e.target.value)
+                          }
                         />
                       </div>
                       <div className="flex-1">
-                        <label className="block text-xs text-slate-500 mb-1">Stock Quantity</label>
+                        <label className="block text-xs text-slate-500 mb-1">
+                          Stock Quantity
+                        </label>
                         <input
                           type="number"
                           className="w-full px-4 py-3 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-3 focus:ring-amber-500/20 focus:border-amber-500 transition-all duration-200 text-slate-800"
                           placeholder="Enter quantity"
                           value={s.stock}
-                          onChange={(e) => handleSizeChange(idx, 'stock', e.target.value)}
+                          onChange={(e) =>
+                            handleSizeChange(idx, "stock", e.target.value)
+                          }
                           min="0"
                         />
                       </div>
@@ -1119,7 +1234,7 @@ export default function ProductFormPage({ productId }: { productId?: string }) {
                             type="button"
                             onClick={() => {
                               const updatedSizes = form.sizes.filter(
-                                (_, i) => i !== idx
+                                (_, i) => i !== idx,
                               );
                               setForm({ ...form, sizes: updatedSizes });
                             }}
@@ -1223,8 +1338,8 @@ export default function ProductFormPage({ productId }: { productId?: string }) {
                           {form.image
                             ? form.image.name
                             : imagePreview
-                            ? "Existing image will be kept"
-                            : "Drag & drop or click to upload"}
+                              ? "Existing image will be kept"
+                              : "Drag & drop or click to upload"}
                         </p>
                         <p className="text-slate-500 text-sm">
                           JPG, PNG or WebP (Max 5MB)
@@ -1286,23 +1401,30 @@ export default function ProductFormPage({ productId }: { productId?: string }) {
                     Additional Images (Max 4)
                   </label>
                   <span className="text-sm text-slate-500">
-                    {existingAdditionalImages.length + form.additionalImages.length}/4 images
+                    {existingAdditionalImages.length +
+                      form.additionalImages.length}
+                    /4 images
                   </span>
                 </div>
 
                 {errors.additionalImages && (
                   <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                    <p className="text-red-600 text-sm">{errors.additionalImages}</p>
+                    <p className="text-red-600 text-sm">
+                      {errors.additionalImages}
+                    </p>
                   </div>
                 )}
 
                 <div className="space-y-4">
                   {/* File input for additional images */}
-                  <div className={`border-2 border-dashed rounded-2xl p-8 text-center transition-colors duration-200 ${
-                    (existingAdditionalImages.length + form.additionalImages.length) >= 4 
-                      ? "border-red-200 bg-red-50/50 cursor-not-allowed" 
-                      : "border-slate-300 hover:border-blue-400 bg-slate-50/50"
-                  }`}
+                  <div
+                    className={`border-2 border-dashed rounded-2xl p-8 text-center transition-colors duration-200 ${
+                      existingAdditionalImages.length +
+                        form.additionalImages.length >=
+                      4
+                        ? "border-red-200 bg-red-50/50 cursor-not-allowed"
+                        : "border-slate-300 hover:border-blue-400 bg-slate-50/50"
+                    }`}
                   >
                     <input
                       ref={additionalFileInputRef}
@@ -1312,12 +1434,18 @@ export default function ProductFormPage({ productId }: { productId?: string }) {
                       onChange={handleAdditionalImagesUpload}
                       className="hidden"
                       id="additional-images-input"
-                      disabled={(existingAdditionalImages.length + form.additionalImages.length) >= 4}
+                      disabled={
+                        existingAdditionalImages.length +
+                          form.additionalImages.length >=
+                        4
+                      }
                     />
-                    
+
                     <div className="flex flex-col items-center justify-center gap-4">
                       <div className="w-20 h-20 bg-gradient-to-br from-blue-100 to-blue-200 rounded-2xl flex items-center justify-center">
-                        {(existingAdditionalImages.length + form.additionalImages.length) >= 4 ? (
+                        {existingAdditionalImages.length +
+                          form.additionalImages.length >=
+                        4 ? (
                           <X className="text-blue-500" size={28} />
                         ) : (
                           <Plus className="text-blue-500" size={28} />
@@ -1325,24 +1453,37 @@ export default function ProductFormPage({ productId }: { productId?: string }) {
                       </div>
                       <div>
                         <p className="text-slate-700 font-medium mb-1">
-                          {(existingAdditionalImages.length + form.additionalImages.length) >= 4 
-                            ? "Maximum 4 images reached" 
+                          {existingAdditionalImages.length +
+                            form.additionalImages.length >=
+                          4
+                            ? "Maximum 4 images reached"
                             : "Click to upload additional images"}
                         </p>
                         <p className="text-slate-500 text-sm">
-                          Upload up to 4 additional images (JPG, PNG, WebP, Max 5MB each)
+                          Upload up to 4 additional images (JPG, PNG, WebP, Max
+                          5MB each)
                         </p>
                       </div>
                       <button
                         type="button"
                         onClick={() => {
-                          if ((existingAdditionalImages.length + form.additionalImages.length) < 4) {
+                          if (
+                            existingAdditionalImages.length +
+                              form.additionalImages.length <
+                            4
+                          ) {
                             additionalFileInputRef.current?.click();
                           }
                         }}
-                        disabled={(existingAdditionalImages.length + form.additionalImages.length) >= 4}
+                        disabled={
+                          existingAdditionalImages.length +
+                            form.additionalImages.length >=
+                          4
+                        }
                         className={`px-6 py-3 rounded-xl font-medium shadow-sm hover:shadow transition-all duration-200 ${
-                          (existingAdditionalImages.length + form.additionalImages.length) >= 4
+                          existingAdditionalImages.length +
+                            form.additionalImages.length >=
+                          4
                             ? "bg-slate-300 text-slate-500 cursor-not-allowed"
                             : "bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700"
                         }`}
@@ -1354,16 +1495,23 @@ export default function ProductFormPage({ productId }: { productId?: string }) {
                   </div>
 
                   {/* Additional Images Preview */}
-                  {(existingAdditionalImages.length > 0 || form.additionalImages.length > 0) && (
+                  {(existingAdditionalImages.length > 0 ||
+                    form.additionalImages.length > 0) && (
                     <div className="mt-6">
                       <div className="flex items-center justify-between mb-3">
                         <p className="text-sm font-semibold text-slate-700">
-                          Additional Images Preview ({(existingAdditionalImages.length + form.additionalImages.length)}/4)
+                          Additional Images Preview (
+                          {existingAdditionalImages.length +
+                            form.additionalImages.length}
+                          /4)
                         </p>
                         <button
                           type="button"
                           onClick={() => {
-                            setForm(prev => ({ ...prev, additionalImages: [] }));
+                            setForm((prev) => ({
+                              ...prev,
+                              additionalImages: [],
+                            }));
                             setExistingAdditionalImages([]);
                             setAdditionalPreviews([]);
                           }}
@@ -1373,29 +1521,34 @@ export default function ProductFormPage({ productId }: { productId?: string }) {
                           Remove All
                         </button>
                       </div>
-                      
+
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         {/* Existing images from database */}
                         {existingAdditionalImages.map((imgUrl, index) => (
-                          <div key={`existing-${index}`} className="relative group">
+                          <div
+                            key={`existing-${index}`}
+                            className="relative group"
+                          >
                             <div className="aspect-square rounded-xl overflow-hidden border border-slate-200 shadow-sm">
                               <img
                                 src={imgUrl}
                                 alt={`Existing additional ${index + 1}`}
                                 className="w-full h-full object-cover"
                               />
-                              
+
                               <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
                                 <button
                                   type="button"
-                                  onClick={() => removeExistingAdditionalImage(index)}
+                                  onClick={() =>
+                                    removeExistingAdditionalImage(index)
+                                  }
                                   className="p-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
                                 >
                                   <Trash2 size={18} />
                                 </button>
                               </div>
                             </div>
-                            
+
                             <div className="mt-2">
                               <p className="text-xs font-medium text-slate-700 truncate">
                                 Existing Image {index + 1}
@@ -1406,23 +1559,32 @@ export default function ProductFormPage({ productId }: { productId?: string }) {
                             </div>
                           </div>
                         ))}
-                        
+
                         {/* New uploaded images */}
                         {form.additionalImages.map((file, index) => (
                           <div key={`new-${index}`} className="relative group">
                             <div className="aspect-square rounded-xl overflow-hidden border border-slate-200 shadow-sm">
-                              {additionalPreviews[existingAdditionalImages.length + index] ? (
+                              {additionalPreviews[
+                                existingAdditionalImages.length + index
+                              ] ? (
                                 <img
-                                  src={additionalPreviews[existingAdditionalImages.length + index]}
+                                  src={
+                                    additionalPreviews[
+                                      existingAdditionalImages.length + index
+                                    ]
+                                  }
                                   alt={`New additional ${index + 1}`}
                                   className="w-full h-full object-cover"
                                 />
                               ) : (
                                 <div className="w-full h-full bg-slate-100 flex items-center justify-center">
-                                  <ImageIcon className="text-slate-400" size={24} />
+                                  <ImageIcon
+                                    className="text-slate-400"
+                                    size={24}
+                                  />
                                 </div>
                               )}
-                              
+
                               <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
                                 <button
                                   type="button"
@@ -1433,7 +1595,7 @@ export default function ProductFormPage({ productId }: { productId?: string }) {
                                 </button>
                               </div>
                             </div>
-                            
+
                             <div className="mt-2">
                               <p className="text-xs font-medium text-slate-700 truncate">
                                 {file.name}
@@ -1442,7 +1604,7 @@ export default function ProductFormPage({ productId }: { productId?: string }) {
                                 {(file.size / 1024 / 1024).toFixed(2)} MB
                               </p>
                             </div>
-                            
+
                             {additionalImageErrors[index] && (
                               <div className="absolute -bottom-2 left-0 right-0 bg-red-500 text-white text-xs px-2 py-1 rounded">
                                 {additionalImageErrors[index]}
@@ -1451,11 +1613,16 @@ export default function ProductFormPage({ productId }: { productId?: string }) {
                           </div>
                         ))}
                       </div>
-                      
-                      {(existingAdditionalImages.length + form.additionalImages.length) < 4 && (
+
+                      {existingAdditionalImages.length +
+                        form.additionalImages.length <
+                        4 && (
                         <div className="mt-4 text-sm text-slate-500">
                           <p>
-                            {4 - (existingAdditionalImages.length + form.additionalImages.length)} slot(s) remaining for additional images
+                            {4 -
+                              (existingAdditionalImages.length +
+                                form.additionalImages.length)}{" "}
+                            slot(s) remaining for additional images
                           </p>
                         </div>
                       )}
@@ -1507,7 +1674,7 @@ export default function ProductFormPage({ productId }: { productId?: string }) {
                       key={flag.label}
                       className={`flex items-center justify-between p-4 bg-white rounded-xl border transition-all duration-200 cursor-pointer hover:shadow-sm ${
                         flag.checked
-                          ? flag.field === "hasOffer" 
+                          ? flag.field === "hasOffer"
                             ? "border-green-300 bg-green-50/50"
                             : "border-amber-300 bg-amber-50/50"
                           : "border-slate-200"
@@ -1613,6 +1780,3 @@ export default function ProductFormPage({ productId }: { productId?: string }) {
     </div>
   );
 }
-
-
-

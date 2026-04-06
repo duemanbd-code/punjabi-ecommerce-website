@@ -1,4 +1,4 @@
-// 
+// front/src/components/Footer.tsx
 
 "use client";
 

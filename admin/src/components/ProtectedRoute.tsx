@@ -1,33 +1,34 @@
 // admin/src/components/ProtectedRoute.tsx
 
 "use client";
-import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const [loading, setLoading] = useState(true);
-  const [isClient, setIsClient] = useState(false);
+  const [isAuthorized, setIsAuthorized] = useState(false);
 
   useEffect(() => {
-    // Make sure code runs only on client
-    setIsClient(true);
-  }, []);
-
-  useEffect(() => {
-    if (!isClient) return;
-
-    const token = localStorage.getItem("admin-token");
+    const token = localStorage.getItem('admin-token');
+    console.log("🔒 ProtectedRoute - Token:", token ? "YES" : "NO");
+    
     if (!token) {
-      router.replace("/login"); // replace instead of push to avoid history back
+      router.replace('/login');
     } else {
-      setLoading(false);
+      setIsAuthorized(true);
     }
-  }, [router, isClient]);
+  }, [router]);
 
-  if (loading) return <p>Loading...</p>;
+  if (!isAuthorized) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return <>{children}</>;
 }
-
-
