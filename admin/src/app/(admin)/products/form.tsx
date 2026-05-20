@@ -27,7 +27,14 @@ import {
 import Link from "next/link";
 import { getAuthToken } from "../../../utils/auth";
 
-const categories = ["regular-panjabi", "premium-panjabi", "luxury-panjabi"];
+const categories = [
+  { value: "regular-panjabi", label: "Regular Panjabi", group: "Panjabi" },
+  { value: "premium-panjabi", label: "Premium Panjabi", group: "Panjabi" },
+  { value: "luxury-panjabi", label: "Luxury Panjabi", group: "Panjabi" },
+  { value: "shirts", label: "Shirts", group: "Shirts" },
+];
+
+// const categories = ["regular-panjabi", "premium-panjabi", "luxury-panjabi"];
 
 interface SizeStock {
   size: string;
@@ -950,11 +957,18 @@ export default function ProductFormPage({ productId }: { productId?: string }) {
                         value={form.category}
                         onChange={handleInputChange("category")}
                       >
-                        {categories.map((c) => (
-                          <option key={c} value={c} className="py-2">
-                            {c.replace("-", " ").toUpperCase()}
+                        <optgroup label="Panjabi">
+                          <option value="regular-panjabi">
+                            Regular Panjabi
                           </option>
-                        ))}
+                          <option value="premium-panjabi">
+                            Premium Panjabi
+                          </option>
+                          <option value="luxury-panjabi">Luxury Panjabi</option>
+                        </optgroup>
+                        <optgroup label="Shirts">
+                          <option value="shirts">Shirts</option>
+                        </optgroup>
                       </select>
                       <div className="absolute right-4 top-1/2 transform -translate-y-1/2 pointer-events-none">
                         <div className="w-2 h-2 border-r-2 border-b-2 border-slate-400 transform rotate-45"></div>

@@ -186,10 +186,10 @@ export default function Header() {
             <Link href="/" className="flex items-center">
               <div className="relative">
                 <Image
-                  src="/brand-logo.png"
+                  src="/duemanbd-logo.jpg"
                   alt="PunjabiStyle Logo"
-                  width={140}
-                  height={140}
+                  width={60}
+                  height={60}
                   className="object-contain"
                   priority
                 />
